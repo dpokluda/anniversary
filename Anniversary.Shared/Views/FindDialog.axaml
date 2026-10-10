@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Anniversary.Views.FindDialog"
+        Title="Find"
+        Icon="avares://Anniversary.Shared/Assets/App.ico"
+        SizeToContent="WidthAndHeight" CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid ColumnDefinitions="*,Auto" Margin="12" ColumnSpacing="12">
+    <StackPanel Spacing="8" MinWidth="280">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Name:" />
+        <TextBox x:Name="NameBox" PlaceholderText="e.g. Petr, Novák…" />
+      </StackPanel>
+      <Border Classes="section">
+        <StackPanel>
+          <TextBlock Classes="caption" Text="Options" />
+          <CheckBox x:Name="FromCurrentDateBox" Content="From current date" />
+          <CheckBox x:Name="WholeWordsBox" Content="Whole words only" />
+          <CheckBox x:Name="CalendarOnlyBox" Content="Search calendar only" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    <StackPanel Grid.Column="1" Spacing="6" Margin="0,20,0,0">
+      <Button Classes="cmd accent" Content="OK" IsDefault="True" Click="OnOk" />
+      <Button Classes="cmd" Content="Cancel" IsCancel="True" Click="OnCancel" />
+    </StackPanel>
+  </Grid>
+</Window>
+

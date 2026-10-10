@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Anniversary.Views.ChangeDateDialog"
+        Title="Change Date"
+        Icon="avares://Anniversary.Shared/Assets/App.ico"
+        SizeToContent="WidthAndHeight" CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid ColumnDefinitions="*,Auto" Margin="12" ColumnSpacing="12">
+    <Border Classes="section" MinWidth="240">
+      <StackPanel>
+        <TextBlock Classes="caption" Text="Current Date" />
+        <CalendarDatePicker x:Name="Picker" SelectedDateFormat="Long" IsTodayHighlighted="True"
+                            HorizontalAlignment="Stretch" />
+      </StackPanel>
+    </Border>
+    <StackPanel Grid.Column="1" Spacing="6">
+      <Button Classes="cmd accent" Content="OK" IsDefault="True" Click="OnOk" />
+      <Button Classes="cmd" Content="Cancel" IsCancel="True" Click="OnCancel" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -1,0 +1,137 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Anniversary.Views.MainWindow"
+        Title="Anniversary"
+        Icon="avares://Anniversary.Shared/Assets/App.ico"
+        Width="312" Height="{DynamicResource AppWindowHeight}" MinWidth="280" MinHeight="420"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Resources>
+    <!-- One commands menu, shown by the "⋯" button and on right-click (spec 7.2) -->
+    <MenuFlyout x:Key="CommandsMenu" Placement="BottomEdgeAlignedRight" Opening="OnCommandsMenuOpening">
+      <MenuItem Header="Today" Click="OnToday" />
+      <MenuItem Header="Change Date…" Click="OnChangeDate" />
+      <Separator />
+      <MenuItem x:Name="FindMenuItem" Header="Find…" Click="OnFind" />
+      <MenuItem x:Name="FindNextMenuItem" Header="Find Next" Click="OnFindNext" />
+      <Separator />
+      <MenuItem Header="Edit People…" Click="OnEditPeople" />
+      <Separator />
+      <MenuItem x:Name="CalendarMenu" Header="Nameday Calendar" />
+      <MenuItem Header="Theme">
+        <MenuItem x:Name="ThemeSystemItem" Header="System" ToggleType="Radio" GroupName="Theme" Click="OnThemeSystem" />
+        <MenuItem x:Name="ThemeLightItem" Header="Light" ToggleType="Radio" GroupName="Theme" Click="OnThemeLight" />
+        <MenuItem x:Name="ThemeDarkItem" Header="Dark" ToggleType="Radio" GroupName="Theme" Click="OnThemeDark" />
+      </MenuItem>
+      <Separator />
+      <MenuItem Header="About Anniversary…" Click="OnAbout" />
+    </MenuFlyout>
+  </Window.Resources>
+
+  <!-- macOS menu bar (Windows and Linux ignore it) -->
+  <NativeMenu.Menu>
+    <NativeMenu>
+      <NativeMenuItem Header="File">
+        <NativeMenu>
+          <NativeMenuItem Header="Edit People…" />
+        </NativeMenu>
+      </NativeMenuItem>
+      <NativeMenuItem Header="View">
+        <NativeMenu>
+          <NativeMenuItem Header="Nameday Calendar">
+            <NativeMenu />
+          </NativeMenuItem>
+          <NativeMenuItem Header="Appearance">
+            <NativeMenu>
+              <NativeMenuItem Header="System" ToggleType="Radio" />
+              <NativeMenuItem Header="Light" ToggleType="Radio" />
+              <NativeMenuItem Header="Dark" ToggleType="Radio" />
+            </NativeMenu>
+          </NativeMenuItem>
+        </NativeMenu>
+      </NativeMenuItem>
+      <NativeMenuItem Header="Go">
+        <NativeMenu>
+          <NativeMenuItem Header="Yesterday" />
+          <NativeMenuItem Header="Tomorrow" />
+          <NativeMenuItem Header="Today" />
+          <NativeMenuItem Header="Change Date…" />
+        </NativeMenu>
+      </NativeMenuItem>
+      <NativeMenuItem Header="Find">
+        <NativeMenu>
+          <NativeMenuItem Header="Find…" Gesture="Meta+F" />
+          <NativeMenuItem Header="Find Next" Gesture="Meta+G" />
+        </NativeMenu>
+      </NativeMenuItem>
+    </NativeMenu>
+  </NativeMenu.Menu>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="{DynamicResource AppWindowMargin}" RowSpacing="6">
+
+    <!-- Today is -->
+    <Border Grid.Row="0" Classes="section">
+      <StackPanel>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="caption" Text="Today is" VerticalAlignment="Center" />
+          <Button x:Name="MoreButton" Grid.Column="1" Classes="subtle" Margin="0,-3,-5,0"
+                  ToolTip.Tip="More commands" Flyout="{StaticResource CommandsMenu}">
+            <PathIcon Data="{StaticResource MoreIcon}" Width="12" Height="12" />
+          </Button>
+        </Grid>
+        <TextBlock x:Name="DateText" FontSize="{DynamicResource AppDateFontSize}" LineHeight="{DynamicResource AppDateLineHeight}" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"
+                   Cursor="Hand" ToolTip.Tip="Click to change the date" PointerPressed="OnDatePressed" />
+        <Separator Margin="0,4" />
+        <TextBlock x:Name="CalendarText" FontSize="{DynamicResource AppNamesFontSize}" LineHeight="{DynamicResource AppNamesLineHeight}"
+                   FontWeight="{DynamicResource AppStrongFontWeight}" FontStyle="Italic"
+                   TextAlignment="Center" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <!-- Namedays -->
+    <Border Grid.Row="1" Classes="section">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="caption" Text="Namedays" />
+        <Border Classes="value" Height="70">
+          <ScrollViewer>
+            <SelectableTextBlock x:Name="NamedaysText" Classes="names strong" />
+          </ScrollViewer>
+        </Border>
+      </DockPanel>
+    </Border>
+
+    <!-- Birthdays and Anniversaries -->
+    <Border Grid.Row="2" Classes="section">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="caption" Text="Birthdays and Anniversaries" />
+        <Border Classes="value" Height="70">
+          <ScrollViewer>
+            <SelectableTextBlock x:Name="BirthdaysText" Classes="names strong" />
+          </ScrollViewer>
+        </Border>
+      </DockPanel>
+    </Border>
+
+    <!-- Next N days: the only section that grows vertically (v4 anchors) -->
+    <Border Grid.Row="3" Classes="section">
+      <DockPanel>
+        <TextBlock x:Name="NextDaysCaption" DockPanel.Dock="Top" Classes="caption" Text="Next 7 days" />
+        <Border Classes="value">
+          <ScrollViewer>
+            <SelectableTextBlock x:Name="NextDaysText" Classes="names" />
+          </ScrollViewer>
+        </Border>
+      </DockPanel>
+    </Border>
+
+    <!-- Commands -->
+    <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6">
+      <Button Grid.Column="0" Classes="cmd" Content="Yesterday" Click="OnYesterday" />
+      <Button Grid.Column="1" Classes="cmd" Content="Tomorrow" Click="OnTomorrow" />
+      <Button x:Name="QuitButton" Grid.Column="3" Classes="cmd accent" Content="Quit" Click="OnQuit" />
+    </Grid>
+  </Grid>
+</Window>
+
+
+

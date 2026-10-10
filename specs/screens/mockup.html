@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Anniversary v5 – Avalonia look (approximate mockup)</title>
+<style>
+  :root { --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  body { margin: 0; padding: 24px 32px 48px; font-family: var(--font); background: #dfe6ee; color: #1b1b1b; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.note { margin: 0 0 20px; color: #444; font-size: 13px; max-width: 980px; }
+  h2 { font-size: 16px; margin: 28px 0 12px; color: #333; border-bottom: 1px solid #b8c3cf; padding-bottom: 4px; }
+  .row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .cap { font-size: 12px; color: #555; margin: 6px 0 0; text-align: center; }
+
+  /* ---------- theme tokens (approx. Avalonia FluentTheme) ---------- */
+  .light { --win:#ffffff; --chrome:#f3f3f3; --fg:#1b1b1b; --muted:#5a5a5a; --sec:#f7f7f7; --secb:#e0e0e0;
+           --val:#ffffff; --valb:#d0d0d0; --btn:#e5e5e5; --btnb:#d6d6d6; --sep:#d9d9d9; --accent:#0067c0;
+           --menu:#f9f9f9; --menub:#d8d8d8; --hover:#ececec; --input:#ffffff; --inputb:#c8c8c8; }
+  .dark  { --win:#1e1e1e; --chrome:#202020; --fg:#f2f2f2; --muted:#b8b8b8; --sec:#2b2b2b; --secb:#3a3a3a;
+           --val:#202020; --valb:#454545; --btn:#3a3a3a; --btnb:#454545; --sep:#454545; --accent:#4cc2ff;
+           --menu:#2c2c2c; --menub:#3f3f3f; --hover:#3a3a3a; --input:#2b2b2b; --inputb:#555; }
+  .dark .btn.accent { color:#000; }
+
+  /* ---------- window chrome ---------- */
+  .win { background: var(--win); color: var(--fg); border-radius: 8px; overflow: hidden; position: relative;
+         box-shadow: 0 8px 28px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.18); font-size: 14px; }
+  .win.overflow { overflow: visible; }
+  .win.overflow .tb { border-radius: 8px 8px 0 0; }
+  .tb { height: 32px; background: var(--chrome); display: flex; align-items: center; font-size: 12px; }
+  .tb .ico { margin: 0 8px 0 12px; display: flex; }
+  .tb .t { flex: 1; }
+  .tb .c { width: 46px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .mac .tb { justify-content: center; position: relative; font-weight: 600; font-size: 13px; height: 30px; }
+  .mac .lights { position: absolute; left: 12px; display: flex; gap: 8px; }
+  .mac .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .mac .body, .mac { font-family: -apple-system, "SF Pro Text", "Segoe UI", sans-serif; }
+
+  /* ---------- content ---------- */
+  .main { padding: 12px; display: grid; gap: 10px; box-sizing: border-box; }
+  .section { background: var(--sec); border: 1px solid var(--secb); border-radius: 6px; padding: 8px 12px 12px;
+             display: flex; flex-direction: column; min-height: 0; }
+  .caption { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  .date { font-size: 22px; font-weight: 700; text-align: center; cursor: pointer; }
+  .hr { height: 1px; background: var(--sep); margin: 8px 0; }
+  .nameday { font-size: 17px; font-weight: 600; font-style: italic; text-align: center; }
+  .value { background: var(--val); border: 1px solid var(--valb); border-radius: 4px; padding: 6px 8px; flex: 1;
+           font-style: italic; font-size: 16px; line-height: 24px; text-align: center; overflow: hidden; }
+  .value.fixed { flex: none; height: 100px; box-sizing: border-box; }
+  .bar { display: flex; gap: 8px; align-items: center; }
+  .bar .sp { flex: 1; }
+  .btn { background: var(--btn); border: 1px solid var(--btnb); border-radius: 4px; padding: 5px 12px; min-width: 100px;
+         box-sizing: border-box; text-align: center; font-size: 14px; color: var(--fg); height: 32px; line-height: 20px; }
+  .btn.more { min-width: 0; width: 38px; padding: 5px 0; font-weight: 700; letter-spacing: 1px; }
+  .btn.more.subtle { background: transparent; border-color: transparent; width: 32px; height: 26px; line-height: 14px; margin: -4px -6px -4px 0; color: var(--muted); }
+  .btn.more.subtle.pressed { background: var(--hover); border-color: var(--btnb); }
+  .btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ---------- menu flyout ---------- */
+  .menu { position: absolute; background: var(--menu); border: 1px solid var(--menub); border-radius: 8px; padding: 4px;
+          box-shadow: 0 8px 24px rgba(0,0,0,.25); min-width: 230px; font-size: 14px; }
+  .menu .mi { display: flex; padding: 6px 12px; border-radius: 4px; }
+  .menu .mi span:first-child { flex: 1; }
+  .menu .mi .g { color: var(--muted); font-size: 12px; }
+  .menu .mi span.rb { flex: none; width: 20px; }
+  .menu .mi .rb.on::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+                              background: var(--fg); margin: 0 0 1px 2px; }
+  .menu .mi.h { background: var(--hover); }
+  .menu .ms { height: 1px; background: var(--menub); margin: 4px 0; }
+
+  /* ---------- dialogs ---------- */
+  .dlg { padding: 16px; display: flex; gap: 16px; }
+  .vstack { display: flex; flex-direction: column; gap: 8px; }
+  .input { background: var(--input); border: 1px solid var(--inputb); border-radius: 4px; height: 32px; box-sizing: border-box;
+           padding: 5px 10px; display: flex; align-items: center; gap: 8px; }
+  .input.focus { border-bottom: 2px solid var(--accent); }
+  .cb { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .cb i { width: 18px; height: 18px; border: 1px solid var(--muted); border-radius: 4px; display: inline-block; box-sizing: border-box; }
+  .cb i.on { background: var(--accent); border-color: var(--accent); position: relative; }
+  .cb i.on::after { content: "✓"; color: #fff; font-style: normal; font-size: 13px; position: absolute; left: 3px; top: -1px; }
+  .cal { position: absolute; background: var(--menu); border: 1px solid var(--menub); border-radius: 8px; padding: 8px;
+         box-shadow: 0 8px 24px rgba(0,0,0,.25); width: 280px; font-size: 13px; }
+  .cal .hdr { display: flex; justify-content: space-between; padding: 4px 6px 8px; font-weight: 600; }
+  .cal table { width: 100%; border-collapse: collapse; text-align: center; }
+  .cal th { font-weight: 400; color: var(--muted); padding: 4px 0; }
+  .cal td { padding: 2px 0; } .cal td span { display: inline-block; width: 30px; height: 30px; line-height: 30px; border-radius: 50%; }
+  .cal td.o { color: var(--muted); opacity: .6; }
+  .cal td.s span { background: var(--accent); color: #fff; }
+  .dark .cal td.s span { color: #000; }
+
+  /* ---------- mac menu bar ---------- */
+  .macbar { background: rgba(240,240,240,.92); height: 24px; display: flex; align-items: center; gap: 18px; padding: 0 14px;
+            font-size: 13px; font-family: -apple-system, "Segoe UI", sans-serif; border-radius: 8px 8px 0 0; color:#111; }
+  .macbar b { font-weight: 700; }
+  .macdesk { background: linear-gradient(135deg, #6a8caf, #9bb7cf); padding: 0 0 28px; border-radius: 8px; display: inline-block; width: 540px; }
+  .macdesk .wrap { padding: 24px 40px 0; position: relative; }
+
+  /* ---------- data grid (approx. Avalonia DataGrid, Fluent) ---------- */
+  .grid { border: 1px solid var(--valb); border-radius: 4px; background: var(--val); flex: 1; overflow: hidden; }
+  .grid table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14px; }
+  .grid th { text-align: left; font-weight: 600; font-size: 13px; color: var(--muted); padding: 7px 10px;
+             border-bottom: 1px solid var(--valb); background: var(--sec); }
+  .grid td { padding: 0 10px; height: 34px; border-bottom: 1px solid var(--secb); white-space: nowrap; overflow: hidden;
+             text-overflow: ellipsis; }
+  .grid tr.sel td { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .grid .mono { font-variant-numeric: tabular-nums; }
+  .grid .ph { color: var(--muted); opacity: .6; font-style: italic; }
+  .grid .calico { float: right; opacity: .55; font-size: 12px; }
+  .grid .ann { display: flex; align-items: center; gap: 8px; }
+  .grid .ann .sum { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .grid .cell-edit { border: 1px solid var(--inputb); border-bottom: 2px solid var(--accent); border-radius: 3px;
+                     background: var(--input); padding: 3px 6px; margin: 0 -7px; }
+  .btn.mini { min-width: 0; height: 24px; line-height: 12px; padding: 5px 10px; font-size: 12px; }
+
+  /* ---------- single-view export mode ---------- */
+  body.single { padding: 16px; background: #dfe6ee; }
+  #shot { display: inline-block; }
+  .wm { display: inline-block; margin-bottom: 10px; background: #d9480f; color: #fff; font: 700 12px/1 var(--font);
+        letter-spacing: .5px; padding: 6px 10px; border-radius: 4px; }
+  .note .wm { margin: 0 6px 0 0; }
+</style>
+</head>
+<body>
+<h1>Anniversary v5 – approximate Avalonia (Fluent theme) look</h1>
+<p class="note"><span class="wm">PREVIEW MOCK</span>Hand-made HTML mockup, not a real Avalonia render. Spacing, colours and controls follow Avalonia's Fluent theme and
+<code>../spec.md</code>. Avalonia uses the native window frame on each OS, and the content looks the same everywhere.
+Light and dark follow the OS setting. Data matches v4 with the Czech calendar (Friday, October 9, 2026).<br>
+Open this file directly for the gallery, or with <code>?v=&lt;view&gt;&amp;t=&lt;light|dark&gt;</code> for a single view. The <code>*.preview.png</code> files were exported this way with headless Edge
+(<code>msedge --headless=new --force-device-scale-factor=2 --window-size=W,H --screenshot=…</code>).</p>
+
+<h2>Windows 11 – Light</h2>
+<div class="row light" id="win-light"></div>
+
+<h2>Windows 11 – Dark</h2>
+<div class="row dark" id="win-dark"></div>
+
+<h2>macOS – commands also in the native menu bar</h2>
+<div class="row light" id="mac"></div>
+
+<script>
+const icon = `<svg width="16" height="16" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5" fill="#fff" stroke="#888"/>
+  <rect x="1.5" y="1.5" width="13" height="3" fill="#c9c9c9"/><text x="8" y="11" font-size="7" font-weight="700" text-anchor="middle" fill="#d40000" font-family="Arial">24</text>
+  <line x1="4" y1="12.5" x2="12" y2="12.5" stroke="#2050c0"/></svg>`;
+const bigIcon = icon.replace('width="16" height="16"', 'width="48" height="48"');
+
+const D = {
+  date: "Friday, October 9, 2026", nameday: "Štefan/Sára", namedays: "", birthdays: "",
+  next: "Martin Novák<br>Marina, Andrej, Marcel, Renáta, Agáta, Tereza, Havel"
+};
+
+function chrome(title, w, h, body, mac, extra = "") {
+  const tb = mac
+    ? `<div class="tb"><div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>${title}</div>`
+    : `<div class="tb"><span class="ico">${icon}</span><span class="t">${title}</span>` +
+      (w > 400 && !title.startsWith("About") && !title.startsWith("Anniversaries") && !["Find","Change Date"].includes(title) ? `<span class="c">&#x2500;</span><span class="c">&#x2610;</span>` : "") +
+      `<span class="c">&#x2715;</span></div>`;
+  return `<div class="win ${mac ? "mac" : ""} ${extra}" style="width:${w}px;${h ? `height:${h}px;` : ""}">${tb}${body}</div>`;
+}
+
+function mainWindow({ w = 464, h = 732, menu = false, mac = false } = {}) {
+  const ch = mac ? 30 : 32;
+  const body = `
+  <div class="main" style="height:${h - ch}px; grid-template-rows: auto auto auto 1fr auto;">
+    <div class="section"><div class="caption" style="display:flex; align-items:center;"><span style="flex:1">Today is</span>
+        <div class="btn more subtle ${menu ? "pressed" : ""}" title="More commands">&middot;&middot;&middot;</div></div>
+      <div class="date" title="Click to change the date">${D.date}</div><div class="hr"></div>
+      <div class="nameday">${D.nameday}</div></div>
+    <div class="section"><div class="caption">Namedays</div><div class="value fixed">${D.namedays}</div></div>
+    <div class="section"><div class="caption">Birthdays and Anniversaries</div><div class="value fixed">${D.birthdays}</div></div>
+    <div class="section"><div class="caption">Next 7 days</div><div class="value">${D.next}</div></div>
+    <div class="bar"><div class="btn">Yesterday</div><div class="btn">Tomorrow</div><div class="sp"></div>
+          <div class="btn accent">Quit</div></div>
+  </div>
+  ${menu ? `<div class="menu" style="right:24px; top:${ch + 52}px;">
+      <div class="mi"><span>Today</span></div>
+      <div class="mi"><span>Change Date…</span></div>
+      <div class="ms"></div>
+      <div class="mi"><span>Find…</span><span class="g">Ctrl+F</span></div>
+      <div class="mi"><span>Find Next</span><span class="g">F3</span></div>
+      <div class="ms"></div>
+      <div class="mi"><span>Edit People…</span></div>
+      <div class="ms"></div>
+      <div class="mi ${menu === "calendar" ? "h" : ""}"><span>Nameday Calendar</span><span class="g">&#x203A;</span></div>
+      <div class="mi ${menu === true ? "h" : ""}"><span>Theme</span><span class="g">&#x203A;</span></div>
+      <div class="ms"></div>
+      <div class="mi"><span>About Anniversary…</span></div></div>
+    ${menu === "calendar" ? `<div class="menu" style="right:${w - 210}px; top:${ch + 52 + 187 - 5 * 32}px; min-width:210px;">
+      ${["Austria (Österreich)", "Bulgaria (България)", "Czechia (Česko)", "France", "Hungary (Magyarország)", "Italy (Italia)",
+         "Latvia (Latvija)", "Poland (Polska)", "Russia (Россия)", "Slovakia (Slovensko)"].map(n =>
+        `<div class="mi"><span class="rb ${n.startsWith("Czechia") ? "on" : ""}"></span><span>${n}</span></div>`).join("")}</div>` : `
+    <div class="menu" style="right:${w - 210}px; top:${ch + 52 + 219}px; min-width:150px;">
+      <div class="mi"><span class="rb on"></span><span>System</span></div>
+      <div class="mi"><span class="rb"></span><span>Light</span></div>
+      <div class="mi"><span class="rb"></span><span>Dark</span></div></div>`}` : ""}`;
+  return chrome("Anniversary", w, h, body, mac);
+}
+
+function changeDate({ open = false } = {}) {
+  const days = [];
+  // October 2026 starts on Thursday; Sunday-first grid
+  for (let d = 27; d <= 30; d++) days.push([d, "o"]);
+  for (let d = 1; d <= 31; d++) days.push([d, d === 9 ? "s" : ""]);
+  for (let d = 1; days.length < 42; d++) days.push([d, "o"]);
+  let rows = "";
+  for (let r = 0; r < 6; r++) rows += "<tr>" + days.slice(r * 7, r * 7 + 7).map(([d, c]) => `<td class="${c}"><span>${d}</span></td>`).join("") + "</tr>";
+  const body = `
+  <div class="dlg">
+    <div class="section" style="min-width:340px;"><div class="caption">Current Date</div>
+      <div class="input"><span style="flex:1">Friday, October 9, 2026</span><span>&#x1F4C5;</span></div></div>
+    <div class="vstack"><div class="btn accent">OK</div><div class="btn">Cancel</div></div>
+  </div>
+  ${open ? `<div class="cal" style="left:44px; top:118px; z-index:5;"><div class="hdr"><span>October 2026</span><span>&#x2039;&nbsp;&nbsp;&#x203A;</span></div>
+     <table><tr><th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th></tr>${rows}</table></div>` : ""}`;
+  const win = chrome("Change Date", 520, 0, body, false, open ? "overflow" : "");
+  return open ? `<div style="padding-bottom:300px;">${win}</div>` : win;
+}
+
+function findDialog() {
+  const body = `
+  <div class="dlg">
+    <div class="vstack" style="min-width:360px; gap:12px;">
+      <div class="vstack" style="gap:4px;"><span>Name:</span><div class="input focus"><span style="opacity:.5">e.g. Petr, Novák…</span></div></div>
+      <div class="section"><div class="caption">Options</div>
+        <div class="cb"><i></i>From current date</div>
+        <div class="cb"><i class="on"></i>Whole words only</div>
+        <div class="cb"><i></i>Search calendar only</div></div>
+    </div>
+    <div class="vstack" style="margin-top:24px;"><div class="btn accent">OK</div><div class="btn">Cancel</div></div>
+  </div>`;
+  return chrome("Find", 520, 0, body);
+}
+
+function about() {
+  const body = `
+  <div style="padding:20px; width:520px; box-sizing:border-box; display:grid; grid-template-columns:auto 1fr auto; column-gap:16px;">
+    <div style="grid-row: span 2;">${bigIcon}</div>
+    <div style="text-align:center; font-size:18px; font-weight:700;">Anniversary Application</div>
+    <div class="btn accent" style="grid-row: span 2;">OK</div>
+    <div style="text-align:center; margin-top:4px;">Version 5.0</div>
+    <div style="grid-column: 1 / span 3; margin-top:16px;">This program displays names, birthdates, and anniversaries for a specified day.</div>
+    <div style="grid-column: 1 / span 3; margin-top:16px; text-align:center; color:var(--muted);">Copyright © 1997-2026 David Pokluda · MIT License</div>
+  </div>`;
+  return chrome("About Anniversary", 520, 0, body);
+}
+
+const fig = (html, cap) => `<div>${html}<div class="cap">${cap}</div></div>`;
+
+// ---------- data editors (fictional sample data) ----------
+const P = [
+  ["Jan Novák", "06-24", "3/14/1980", "svatba (6/21/2008)", 1],
+  ["Eva Nováková", "12-24", "9/30/1982", "svatba (6/21/2008), seznámení (9/1/2004)", 2],
+  ["Petr Svoboda", "06-29", "1/8/1975", "", 0],
+  ["Marie Dvořáková", "09-12", "11/2/1990", "", 0],
+  ["Tomáš Černý", "03-07", "2/29/2000", "", 0],
+  ["Lucie Malá", "", "10/12/2012", "", 0],
+];
+const toolbar = (extra = "") => `<div class="bar" style="margin-bottom:10px;">
+    <div class="btn" style="min-width:0;">&#xFF0B;&nbsp; Add</div><div class="btn" style="min-width:0;">&#x2212;&nbsp; Remove</div>${extra}</div>`;
+
+function peopleEditor() {
+  const rows = P.map(([n, nd, b, a, cnt], i) => `<tr class="${i === 1 ? "sel" : ""}">
+      <td>${i === 1 ? `<div class="cell-edit">${n}</div>` : n}</td><td class="mono">${nd || `<span class="ph">MM-dd</span>`}</td>
+      <td>${b}<span class="calico">&#x1F4C5;</span></td>
+      <td><div class="ann"><span class="sum">${a || `<span class="ph">none</span>`}</span><span class="btn mini">Edit…</span></div></td></tr>`).join("");
+  const body = `
+  <div style="padding:16px; display:flex; flex-direction:column; height:calc(100% - 32px); box-sizing:border-box;">
+    ${toolbar(`<div class="sp"></div><div class="input" style="width:200px;"><span style="opacity:.5">&#x1F50D;&#xFE0E; Filter by name</span></div>`)}
+    <div class="grid"><table>
+      <colgroup><col style="width:30%"><col style="width:13%"><col style="width:18%"><col></colgroup>
+      <thead><tr><th>Name &#x25B4;</th><th>Nameday</th><th>Birthday</th><th>Anniversaries</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <div class="bar" style="margin-top:12px;">
+      <span style="color:var(--muted); font-size:12px;">6 people · %APPDATA%\\Anniversary\\Anniversary.Data.json</span>
+      <div class="sp"></div><div class="btn accent">Save</div><div class="btn">Cancel</div></div>
+  </div>`;
+  return chrome("Edit People", 780, 470, body);
+}
+
+function anniversariesEditor() {
+  const rows = [["6/21/2008", "svatba", true], ["9/1/2004", "seznámení", false]].map(([d, t, s]) =>
+    `<tr class="${s ? "sel" : ""}"><td>${d}<span class="calico">&#x1F4C5;</span></td><td>${t}</td></tr>`).join("") +
+    `<tr><td></td><td></td></tr><tr><td></td><td></td></tr>`;
+  const body = `
+  <div style="padding:16px;">
+    ${toolbar()}
+    <div class="grid" style="height:auto;"><table>
+      <colgroup><col style="width:42%"><col></colgroup>
+      <thead><tr><th>Date</th><th>Anniversary</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <div class="bar" style="margin-top:12px;"><div class="sp"></div><div class="btn accent">OK</div><div class="btn">Cancel</div></div>
+  </div>`;
+  return chrome("Anniversaries – Eva Nováková", 480, 0, body);
+}
+
+const macView = () => `<div class="macdesk">
+  <div class="macbar"><svg width="12" height="14" viewBox="0 0 12 14"><path d="M9.6 7.4c0-1.6 1.3-2.3 1.4-2.4-.8-1.1-1.9-1.3-2.3-1.3-1-.1-1.9.6-2.4.6s-1.3-.6-2.1-.6C3.1 3.7 2 4.3 1.4 5.4.2 7.5 1.1 10.6 2.3 12.3c.6.8 1.2 1.7 2.1 1.7.8 0 1.2-.5 2.2-.5s1.3.5 2.2.5 1.4-.8 2-1.7c.6-.9.9-1.8.9-1.9 0 0-1.9-.7-2.1-3zM8 2.4c.5-.6.8-1.3.7-2.1-.7 0-1.5.5-2 1-.4.5-.8 1.3-.7 2 .8.1 1.5-.4 2-.9z" fill="#111"/></svg><b>Anniversary</b><span style="background:#2b6de0;color:#fff;padding:0 6px;border-radius:4px;">View</span><span>Go</span><span>Find</span><span>Window</span><span>Help</span>
+    <span style="flex:1"></span><span>Fri Oct 9 17:02</span></div>
+  <div class="wrap">
+    <div class="menu" style="left:136px; top:0; z-index:2; min-width:200px; border-radius:6px; background:#f4f4f4; color:#111;">
+      <div class="mi"><span>Nameday Calendar</span><span class="g">&#x203A;</span></div>
+      <div class="mi h" style="background:#2b6de0;color:#fff;"><span>Appearance</span><span class="g" style="color:#fff">&#x203A;</span></div></div>
+    <div class="menu" style="left:338px; top:32px; z-index:2; min-width:150px; border-radius:6px; background:#f4f4f4; color:#111;">
+      <div class="mi"><span class="rb" style="color:#111">&#x2713;</span><span>System</span></div>
+      <div class="mi"><span class="rb"></span><span>Light</span></div>
+      <div class="mi"><span class="rb"></span><span>Dark</span></div></div>
+    ${mainWindow({ mac: true, h: 730 })}
+  </div></div>`;
+
+// Single-view mode used to export the spec images: mockup.html?v=<view>&t=<light|dark>
+const views = {
+  "people-editor": () => peopleEditor(),
+  "anniversaries-editor": () => anniversariesEditor(),
+  "main-window": () => mainWindow(),
+  "main-window-menu": () => mainWindow({ menu: true }),
+  "main-window-calendar-menu": () => mainWindow({ menu: "calendar" }),
+  "main-window-resized": () => mainWindow({ w: 720, h: 820 }),
+  "change-date-dialog": () => changeDate(),
+  "change-date-dialog-calendar": () => changeDate({ open: true }),
+  "find-dialog": () => findDialog(),
+  "about-dialog": () => about(),
+  "main-window-macos": () => macView(),
+};
+const q = new URLSearchParams(location.search);
+if (views[q.get("v")]) {
+  const t = q.get("t") || "light";
+  document.body.className = "single";
+  document.body.innerHTML = `<div id="shot" class="${t}"><div class="wm">PREVIEW MOCK – approximate look, not a real Avalonia render</div>${views[q.get("v")]()}</div>`;
+} else {
+for (const id of ["win-light", "win-dark"]) {
+  document.getElementById(id).innerHTML =
+    fig(mainWindow(), "Main window") +
+    fig(mainWindow({ menu: true }), "“···” / right-click menu with Theme submenu (replaces the system menu)") +
+    fig(mainWindow({ menu: "calendar" }), "Nameday Calendar submenu (the 10 shipped calendars)") +
+    fig(mainWindow({ w: 720, h: 820 }), "Resized – the sections grow") +
+    `<div class="vstack" style="gap:28px;">${fig(changeDate(), "Change Date")}${fig(changeDate({ open: true }), "Change Date – calendar drop-down")}</div>` +
+    `<div class="vstack" style="gap:28px;">${fig(findDialog(), "Find")}${fig(about(), "About")}</div>` +
+    fig(peopleEditor(), "Edit People (Add/Remove, inline editing, Save writes the data file)") +
+    fig(anniversariesEditor(), "Anniversaries for one person (opened by “Edit…”)");
+}
+
+document.getElementById("mac").innerHTML = fig(macView(), "macOS: native title bar; View ▸ Appearance (System/Light/Dark), Go and Find menus in the global menu bar; “About Anniversary” in the app menu");
+}
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

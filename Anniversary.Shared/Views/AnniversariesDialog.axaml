@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Anniversary.Views"
+        x:Class="Anniversary.Views.AnniversariesDialog"
+        Title="Anniversaries"
+        Icon="avares://Anniversary.Shared/Assets/App.ico"
+        Width="400" SizeToContent="Height" CanResize="False"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="12" Spacing="8">
+    <StackPanel Orientation="Horizontal" Spacing="6">
+      <Button Content="+  Add" Click="OnAdd" />
+      <Button Content="−  Remove" Click="OnRemove" />
+    </StackPanel>
+
+    <DataGrid x:Name="AnniversaryGrid" x:DataType="views:AnniversaryRow" Height="160"
+              AutoGenerateColumns="False" CanUserSortColumns="False" SelectionMode="Extended"
+              GridLinesVisibility="Horizontal" BorderThickness="1" BorderBrush="{DynamicResource ValueBorder}" CornerRadius="4">
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Date" Width="140">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="views:AnniversaryRow">
+              <CalendarDatePicker SelectedDate="{Binding Date}" SelectedDateFormat="Short"
+                                  HorizontalAlignment="Stretch" BorderThickness="0" Background="Transparent" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Anniversary" Binding="{Binding Name}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <TextBlock x:Name="ErrorText" Classes="muted" TextWrapping="Wrap" IsVisible="False" />
+
+    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+      <Button x:Name="OkButton" Classes="cmd accent" Content="OK" IsDefault="True" Click="OnOk" />
+      <Button Classes="cmd" Content="Cancel" IsCancel="True" Click="OnCancel" />
+    </StackPanel>
+  </StackPanel>
+</Window>
+

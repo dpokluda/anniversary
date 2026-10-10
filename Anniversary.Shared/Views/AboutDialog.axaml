@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Anniversary.Views.AboutDialog"
+        Title="About Anniversary"
+        Icon="avares://Anniversary.Shared/Assets/App.ico"
+        SizeToContent="WidthAndHeight" CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" Margin="12" ColumnSpacing="12" Width="400">
+    <Image Grid.RowSpan="2" Source="avares://Anniversary.Shared/Assets/App.png" Width="40" Height="40"
+           VerticalAlignment="Top" RenderOptions.BitmapInterpolationMode="HighQuality" />
+    <TextBlock Grid.Column="1" Text="Anniversary Application" FontSize="{DynamicResource AppNamesFontSize}" FontWeight="Bold" HorizontalAlignment="Center" />
+    <TextBlock Grid.Column="1" Grid.Row="1" x:Name="VersionText" HorizontalAlignment="Center" Margin="0,2,0,0" />
+    <Button Grid.Column="2" Grid.RowSpan="2" Classes="cmd accent" Content="OK" IsDefault="True" IsCancel="True"
+            VerticalAlignment="Top" Click="OnOk" />
+    <TextBlock Grid.Row="2" Grid.ColumnSpan="3" TextWrapping="Wrap" Margin="0,12,0,0"
+               Text="This program displays names, birthdates, and anniversaries for a specified day." />
+    <TextBlock Grid.Row="3" Grid.ColumnSpan="3" x:Name="CopyrightText" Classes="muted"
+               HorizontalAlignment="Center" Margin="0,12,0,0" />
+  </Grid>
+</Window>
+

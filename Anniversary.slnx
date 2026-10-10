@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Anniversary.Shared/Anniversary.Shared.csproj" />
+  <Project Path="Anniversary.Desktop/Anniversary.Desktop.csproj" />
+  <Project Path="Anniversary.Tests/Anniversary.Tests.csproj" />
+</Solution>

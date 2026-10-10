@@ -1,0 +1,132 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Anniversary.App"
+             Name="Anniversary"
+             RequestedThemeVariant="Default">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="SectionBackground" Color="#F7F7F7" />
+          <SolidColorBrush x:Key="SectionBorder" Color="#E0E0E0" />
+          <SolidColorBrush x:Key="ValueBackground" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="ValueBorder" Color="#D0D0D0" />
+          <SolidColorBrush x:Key="SectionHeader" Color="#5A5A5A" />
+          <SolidColorBrush x:Key="SeparatorBrush" Color="#D6D6D6" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="SectionBackground" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="SectionBorder" Color="#3A3A3A" />
+          <SolidColorBrush x:Key="ValueBackground" Color="#202020" />
+          <SolidColorBrush x:Key="ValueBorder" Color="#454545" />
+          <SolidColorBrush x:Key="SectionHeader" Color="#B8B8B8" />
+          <SolidColorBrush x:Key="SeparatorBrush" Color="#4A4A4A" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+      <StreamGeometry x:Key="MoreIcon">M2,8 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0 M6.4,8 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0 M10.8,8 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0</StreamGeometry>
+
+      <!-- Menus: items and separators use the same left/right inset, so separator lines align with the item text -->
+      <Thickness x:Key="MenuFlyoutItemThemePaddingNarrow">10,4,10,4</Thickness>
+      <Thickness x:Key="MenuFlyoutSeparatorThemePadding">10,3,10,3</Thickness>
+      <Thickness x:Key="MenuFlyoutItemChevronMargin">12,0,0,0</Thickness>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <!-- Compact density: control and menu heights closer to native desktop dialogs -->
+    <FluentTheme DensityStyle="Compact" />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+    <!-- The platform's standard UI font size (set in App.Initialize), inherited by all text -->
+    <Style Selector="Window">
+      <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
+    </Style>
+    <Style Selector="MenuFlyoutPresenter, ToolTip, CalendarDatePicker, TextBox, CheckBox, Button, MenuItem, DataGrid, DataGridCell, DataGridColumnHeader">
+      <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
+    </Style>
+    <!-- Subtle 1 px lines (under the date and in menus) instead of Fluent's darker mid-gray -->
+    <Style Selector="Separator">
+      <Setter Property="Background" Value="{DynamicResource SeparatorBrush}" />
+    </Style>
+    <Style Selector="DataGridRow">
+      <Setter Property="MinHeight" Value="28" />
+    </Style>
+    <Style Selector="DataGridCell CalendarDatePicker">
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="8,2,4,2" />
+    </Style>
+
+    <!-- Calendar drop-down: Fluent's 40 px day cells and 294 x 290 minimum grid are scaled down to the app's
+         font size (the font itself comes from CalendarFontSize / CalendarDayButtonFontSize set in App.Initialize). -->
+    <Style Selector="CalendarDayButton, CalendarButton">
+      <Setter Property="MinWidth" Value="28" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="CalendarItem /template/ Button#PART_PreviousButton Path, CalendarItem /template/ Button#PART_NextButton Path">
+      <Setter Property="RenderTransform" Value="scale(0.6)" />
+    </Style>
+
+    <!-- "Group box" replacement: a soft card with a caption -->
+    <Style Selector="Border.section">
+      <Setter Property="Background" Value="{DynamicResource SectionBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SectionBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="8,4,8,8" />
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="Foreground" Value="{DynamicResource SectionHeader}" />
+      <Setter Property="FontSize" Value="{DynamicResource AppCaptionFontSize}" />
+      <Setter Property="LineHeight" Value="{DynamicResource AppCaptionLineHeight}" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{DynamicResource SectionHeader}" />
+    </Style>
+    <Style Selector="Border.value">
+      <Setter Property="Background" Value="{DynamicResource ValueBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ValueBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
+    <Style Selector="SelectableTextBlock.names">
+      <Setter Property="FontStyle" Value="Italic" />
+      <Setter Property="FontSize" Value="{DynamicResource AppNamesFontSize}" />
+      <Setter Property="LineHeight" Value="{DynamicResource AppNamesLineHeight}" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="SelectableTextBlock.names.strong">
+      <Setter Property="FontWeight" Value="{DynamicResource AppStrongFontWeight}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.names.hint">
+      <Setter Property="FontStyle" Value="Normal" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
+      <Setter Property="LineHeight" Value="{DynamicResource AppLineHeight}" />
+      <Setter Property="Foreground" Value="{DynamicResource SectionHeader}" />
+    </Style>
+    <Style Selector="Button.cmd">
+      <Setter Property="MinWidth" Value="75" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.subtle">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="4,2" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+  </Application.Styles>
+
+  <!-- macOS application menu (ignored on Windows and Linux) -->
+  <NativeMenu.Menu>
+    <NativeMenu>
+      <NativeMenuItem Header="About Anniversary" Click="OnAbout" />
+    </NativeMenu>
+  </NativeMenu.Menu>
+</Application>
+

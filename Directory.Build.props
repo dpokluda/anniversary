@@ -1,0 +1,19 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>5.0.0</Version>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <FileVersion>5.0.0.0</FileVersion>
+    <Authors>David Pokluda</Authors>
+    <Product>Anniversary</Product>
+    <Copyright>Copyright © 1997-2026 David Pokluda</Copyright>
+    <AvaloniaVersion>12.1.4</AvaloniaVersion>
+    <AvaloniaDataGridVersion>12.1.2</AvaloniaDataGridVersion>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Anniversary</RootNamespace>
+    <AssemblyName>Anniversary.Shared</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(AvaloniaDataGridVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Built-in defaults are looked up by their plain file name (spec 5.3 step 3). -->
+    <EmbeddedResource Include="Defaults\*.json" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\calendars\Anniversary.Calendar.*.json" LogicalName="%(Filename)%(Extension)" Link="Calendars\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Anniversary.Tests" />
+  </ItemGroup>
+
+</Project>
