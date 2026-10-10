@@ -1,5 +1,7 @@
 # Anniversary v5
 
+[![CI](https://github.com/dpokluda/anniversary/actions/workflows/ci.yml/badge.svg)](https://github.com/dpokluda/anniversary/actions/workflows/ci.yml)
+
 Shows name days, birthdays and anniversaries for a day. It's a cross-platform rewrite of the WinForms
 Anniversary v4 (kept in a separate repository) using [Avalonia UI](https://avaloniaui.net/) on .NET 10, and runs on Windows, macOS
 and Linux. The design is in [`specs/spec.md`](specs/spec.md) and [`specs/plan.md`](specs/plan.md).
@@ -17,25 +19,41 @@ dotnet run --project Anniversary.Desktop
 `global.json` opts `dotnet test` into Microsoft.Testing.Platform, which the .NET 10 SDK needs for xUnit v3.
 JetBrains Rider with the AvaloniaRider plugin gives a live XAML preview.
 
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) builds with warnings as errors and runs the tests on
+Windows, macOS and Linux for every push to `main` and every pull request, then publishes all the builds below.
+
 ## Publish
 
 Each platform gets a single self-contained executable plus `THIRD-PARTY-NOTICES.md` (required by the license of the
 bundled name-day calendars; keep it next to the executable).
 
 ```powershell
-dotnet publish Anniversary.Desktop -c Release -r win-x64   --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\win-x64
-dotnet publish Anniversary.Desktop -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\osx-arm64
-dotnet publish Anniversary.Desktop -c Release -r osx-x64   --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\osx-x64
-dotnet publish Anniversary.Desktop -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\linux-x64
+dotnet publish Anniversary.Desktop -c Release -r win-x64     --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\win-x64
+dotnet publish Anniversary.Desktop -c Release -r win-arm64   --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\win-arm64
+dotnet publish Anniversary.Desktop -c Release -r osx-arm64   --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\osx-arm64
+dotnet publish Anniversary.Desktop -c Release -r osx-x64     --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\osx-x64
+dotnet publish Anniversary.Desktop -c Release -r linux-x64   --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\linux-x64
+dotnet publish Anniversary.Desktop -c Release -r linux-arm64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\linux-arm64
 ```
 
-All four can be built on Windows. On macOS and Linux, mark the file executable (`chmod +x Anniversary`). The macOS
-output is a plain executable, not a signed `.app` bundle.
+All six can be built on Windows. The `arm64` builds are for ARM machines: `win-arm64` for Windows on ARM (e.g.
+Snapdragon laptops), `osx-arm64` for Apple Silicon Macs and `linux-arm64` for ARM Linux (e.g. a Linux virtual machine on
+an Apple Silicon Mac). On macOS and Linux, mark the file executable (`chmod +x Anniversary`). The macOS output is a
+plain executable, not a signed `.app` bundle.
+
+### Downloading a build
+
+Every CI run that passes ([Actions](https://github.com/dpokluda/anniversary/actions/workflows/ci.yml)) offers one
+download per platform, kept for 30 days: `Anniversary-{rid}.zip` for Windows and `Anniversary-{rid}.tar.gz` for macOS
+and Linux (downloading needs a GitHub sign-in). Each holds a `{rid}` folder with the executable and
+`THIRD-PARTY-NOTICES.md`. The `.tar.gz` keeps the executable flag, so `tar -xzf Anniversary-linux-x64.tar.gz` gives a
+folder that's ready to run.
 
 ### Running on macOS
 
 The macOS builds are a single ad-hoc signed executable, not a notarized `.app`. Use `osx-arm64` for Apple Silicon (M1 and
-newer) and `osx-x64` for Intel Macs. Copy the `publish/osx-…` folder to the Mac, then in Terminal:
+newer) and `osx-x64` for Intel Macs. Copy the `publish/osx-…` folder to the Mac (or extract a CI download), then in
+Terminal:
 
 ```bash
 cd path/to/osx-arm64
@@ -44,14 +62,22 @@ xattr -d com.apple.quarantine Anniversary   # only if it was downloaded (Gatekee
 ./Anniversary
 ```
 
-Things to check on a Mac (spec acceptance criteria 2, 4, 7, 9):
+On macOS the commands are also in the menu bar: **File** (Edit People…), **View** (Nameday Calendar, Appearance),
+**Go** (Yesterday, Tomorrow, Today, Change Date…), **Find** (Find… ⌘F, Find Next ⌘G), and **About Anniversary** in the
+app menu.
 
-- The window opens with the macOS title bar and the system font, and the layout matches Windows.
-- The menu bar has **View** (Nameday Calendar, Appearance), **Go**, **Find** (⌘F, ⌘G), and **About Anniversary** in the
-  app menu. ⌘F and ⌘G work.
-- With Appearance set to **System**, switching macOS between Light and Dark (or Auto) re-themes the running app.
-- Data is read from `~/Library/Application Support/Anniversary`. Copy `Anniversary.Data.json` there and restart.
-- Edit People saves, and the calendar drop-downs open and close correctly.
+### Running on Linux
+
+Use `linux-x64` on PCs and `linux-arm64` on ARM machines. Copy the `publish/linux-…` folder (or extract a CI download),
+then:
+
+```bash
+cd path/to/linux-x64
+chmod +x Anniversary   # not needed for a CI download
+./Anniversary
+```
+
+The app needs fontconfig, libX11, libICE and libSM, which desktop distributions such as Fedora Workstation already have.
 
 ## Your data
 

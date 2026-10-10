@@ -1,0 +1,76 @@
+# Builds and tests on Windows, macOS and Linux, then publishes every RID from spec section 10 as a download.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Build (warnings are errors)
+        run: dotnet build Anniversary.slnx -warnaserror
+      - name: Test
+        run: dotnet test --project Anniversary.Tests --no-build
+
+  publish:
+    name: Publish ${{ matrix.rid }}
+    needs: test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64,     os: windows-latest, archive: zip }
+          - { rid: win-arm64,   os: windows-latest, archive: zip }
+          - { rid: osx-arm64,   os: macos-latest,   archive: tar.gz }
+          - { rid: osx-x64,     os: macos-latest,   archive: tar.gz }
+          - { rid: linux-x64,   os: ubuntu-latest,  archive: tar.gz }
+          - { rid: linux-arm64, os: ubuntu-latest,  archive: tar.gz }
+    env:
+      ARCHIVE: Anniversary-${{ matrix.rid }}.${{ matrix.archive }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      # The README's publish command, run on the RID's own OS.
+      - name: Publish
+        run: >-
+          dotnet publish Anniversary.Desktop -c Release -r ${{ matrix.rid }} --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/${{ matrix.rid }}
+      # One archive per RID, uploaded as is (not zipped again). tar keeps the executable bit, which zipping loses.
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: Compress-Archive -Path publish/${{ matrix.rid }} -DestinationPath $env:ARCHIVE
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        run: tar -czf "$ARCHIVE" -C publish ${{ matrix.rid }}
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ env.ARCHIVE }}
+          archive: false
+          retention-days: 30
+          if-no-files-found: error

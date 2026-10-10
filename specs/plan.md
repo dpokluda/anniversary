@@ -36,7 +36,8 @@ Three projects, code-behind views (no MVVM), and one plain logic class:
 ```
 anniversary\  (repository root)
   Anniversary.slnx, Directory.Build.props, README.md
-  specs\                   spec.md, plan.md, screens\ (v5 preview mocks)
+  .github\workflows\       ci.yml: build, test and publish on Windows, macOS and Linux
+  specs\                   spec.md, plan.md, copilot\handover.md, screens\ (v5 preview mocks)
   Anniversary.Shared\      shared Avalonia library: Model\, AnniversaryBook, DayInfo, Views\, App.axaml, Assets\, Defaults\
   Anniversary.Desktop\     WinExe "Anniversary" for Windows/macOS/Linux (Program.cs)
   Anniversary.Tests\       xUnit, classic style
@@ -58,7 +59,7 @@ Later phases add `Anniversary.iOS` (and maybe `Anniversary.Android`) next to `An
 | Name-day calendars | **⋯ ▸ Nameday Calendar ▸** lists the calendar files found (`Anniversary.Calendar.*.json` in the exe folder, app-data and the built-in calendars); the choice is remembered in `usersettings.json`. **10 calendars ship**: Czech (v4), Austrian, Bulgarian, French, Hungarian, Italian, Polish, Russian, Slovak (radoone/nameday-mcp, MIT) and Latvian (official list, CC0). They are generated reproducibly by `calendars\Build-Calendars.ps1` from pinned sources and validated; sources, checks and exclusions are in `calendars\README.md`. Left out: Croatian (damaged data), Greek (incomplete, partly tied to Easter), Swedish/Finnish (copyrighted), and others with no verified open source yet. |
 | People editor | **Edit People…** dialog with a grid (Name, Nameday, Birthday, Anniversaries with an Edit… button) and a nested Anniversaries dialog (date → name). Saves the data file (to app-data when the data came from the empty default). Mocked and specified (spec 5.6, 7.8, 7.9); user-approved for phase 1; implemented after the core app. |
 | Dates | `DateOnly` in all logic. The day is passed in; only the UI reads "today". No `TimeProvider`. |
-| Window size and resizing | Default 464 × 700 (as v4). Resizing follows v4's anchors: only "Next N days" grows taller, and everything stretches to the width. |
+| Window size and resizing | Default 312 × 468 device-independent pixels (312 × 492 on macOS): v4's 464 × 701, which v4 gave in physical pixels at 150 % scaling, so it matches v4 on screen. Resizing follows v4's anchors: only "Next N days" grows taller, and everything stretches to the width. |
 | Change Date dialog | Compact, v4 size; the calendar drop-down extends below the dialog. |
 | Look | Fluent theme, following the OS light/dark setting; layout mirrors v4. |
 | Theme switching | **Theme ▸ System / Light / Dark** in the ⋯/right-click menu (macOS: View ▸ Appearance). System follows OS changes live, including scheduled ones (macOS Auto, PowerToys Light Switch). The choice is remembered in an app-written `usersettings.json` in the app-data folder; `appsettings.json` is never written. The persistence choice was made autonomously while the user was away. |
@@ -79,18 +80,24 @@ banner. Their source is `specs\screens\mockup.html`.
 
 ## Work breakdown (phase 1)
 
-1. **spec** – Create `specs\` (spec, plan, mocks). ✅
-2. **scaffold** – `Anniversary.slnx`, `Directory.Build.props`, the three projects.
-3. **core** – Model (including `UserSettings`), `AnniversaryBook`, `DayInfo`, embedded defaults.
-4. **core-tests** – Classic xUnit tests (spec section 9), including `UserSettingsTests`.
-5. **main-view** – `App.axaml` styles and `MainWindow` (code-behind, v4 resizing).
-6. **dialogs** – Change Date, Find, About, `MessageDialog`.
-7. **commands-menu** – "⋯" menu, right-click menu, Theme submenu, shortcuts, macOS `NativeMenu`.
-8. **assets** – Icon, default data/config files as embedded resources.
-9. **publish** – Self-contained publish for win-x64, osx-arm64, osx-x64, linux-x64; `README.md`.
-10. **people-editor** – People editor + Anniversaries dialog, saving, `SaveTests`.
-11. **calendar-chooser** – Calendar discovery, the Nameday Calendar menu, remembering the choice, `CalendarTests`, Czech metadata.
+Phase 1 is done and verified on Windows, macOS and Linux.
 
+1. **spec** – Create `specs\` (spec, plan, mocks). ✅
+2. **scaffold** – `Anniversary.slnx`, `Directory.Build.props`, the three projects. ✅
+3. **core** – Model (including `UserSettings`), `AnniversaryBook`, `DayInfo`, embedded defaults. ✅
+4. **core-tests** – Classic xUnit tests (spec section 9), including `UserSettingsTests`. ✅
+5. **main-view** – `App.axaml` styles and `MainWindow` (code-behind, v4 resizing). ✅
+6. **dialogs** – Change Date, Find, About, `MessageDialog`. ✅
+7. **commands-menu** – "⋯" menu, right-click menu, Theme submenu, shortcuts, macOS `NativeMenu`. ✅
+8. **assets** – Icon, default data/config files as embedded resources. ✅
+9. **publish** – Self-contained publish for win-x64, osx-arm64, osx-x64, linux-x64; `README.md`. ✅
+10. **people-editor** – People editor + Anniversaries dialog, saving, `SaveTests`. ✅
+11. **calendar-chooser** – Calendar discovery, the Nameday Calendar menu, remembering the choice, `CalendarTests`, Czech metadata. ✅
+12. **ci** – GitHub Actions: build and test on Windows, macOS and Linux, then publish every RID, now including
+    `win-arm64` and `linux-arm64` (spec 10). ✅
+
+Next (agreed): **mac-app** – a macOS `.app` bundle (`Info.plist`, `App.icns`, app name) for a proper Dock icon and name;
+optionally Developer ID signing and notarization. Then the holiday and observance calendars below.
 Follow-ups: one task per additional name-day calendar (license checked, every date verified against its source).
 Future phases: **ios** (phase 2), **android** (phase 3, optional).
 
@@ -117,5 +124,31 @@ Further ideas, not agreed yet:
 - Saints' days (Spain, Portugal, Latin America); Greek name days (some Easter-relative).
 - Swedish/Finnish name days: their official lists are copyrighted, so check licensing first.
 - Astronomical days (solstices, equinoxes, full moons): computed, no licensing issue.
+
+## Idea: installers and start at login (requested, not started)
+
+Today each platform gets a single executable that is copied by hand (spec 10). Later, each platform could get a proper
+install, and the app could start when the user logs in. The spec lists installers as a phase-1 non-goal, so this needs
+a spec section when it's picked up.
+
+| | Windows | macOS | Linux |
+|---|---|---|---|
+| **Install** | Per-user installer (e.g. Inno Setup) into `%LOCALAPPDATA%\Programs\Anniversary`: Start-menu shortcut and uninstaller, no admin rights. MSIX is possible but needs a trusted signing certificate. | The `.app` bundle (**mac-app**, above) in a `.dmg`, dragged into Applications; macOS apps rarely use installers. | The CI `.tar.gz` plus a small install script that adds a `.desktop` entry and the icon (which also gives GNOME the app icon). An RPM or a Flatpak later, if wanted. |
+| **Start at login** | A value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | A LaunchAgent plist in `~/Library/LaunchAgents`, or the `SMAppService` login-item API (macOS 13+) once there's an `.app` bundle | A `.desktop` file in `~/.config/autostart` (XDG autostart) |
+
+Suggestions (not decided yet):
+- **No data file is installed.** The app already starts with the empty built-in people list and creates
+  `Anniversary.Data.json` in the app-data folder on the first Save (spec 5.6). An installer must never put a data file
+  next to the executable: Program Files is read-only for users, so saving would fail.
+- **Start at login as an in-app setting** (⋯ ▸ Start at Login, a check item) rather than an installer step: per user,
+  no admin rights, works for copies that weren't installed, and can be turned off again. It needs a little platform code
+  in the desktop project and no packages. The Windows uninstaller should remove the entry too.
+- **Signing:** unsigned downloads get a SmartScreen warning on Windows and are blocked by Gatekeeper on macOS (the
+  `xattr` workaround in the README). Signing needs a Windows code-signing certificate and a paid Apple Developer account
+  (Developer ID signing and notarization).
+- **Releases:** CI can build each installer on its own OS. Pushing a version tag (e.g. `v5.1.0`) could attach them,
+  with the plain downloads, to a GitHub Release. The version is raised by hand in `Directory.Build.props` when
+  something ships.
+- **Uninstalling keeps the user's data** (the app-data folder).
 
 
