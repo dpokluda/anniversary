@@ -30,6 +30,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Anniversary.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The README for users (spec 10), shipped in every archive and installer. -->
     <None Update="README.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <!-- Required by the MIT license of the bundled name-day data (spec 5.7). -->

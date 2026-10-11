@@ -65,3 +65,22 @@ Name: "{autodesktop}\Anniversary"; Filename: "{app}\Anniversary.exe"; Tasks: des
 
 [Run]
 Filename: "{app}\Anniversary.exe"; Description: "{cm:LaunchProgram,Anniversary}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+const
+  RunKey = 'Software\Microsoft\Windows\CurrentVersion\Run';
+  ApprovedKey = 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run';
+
+// Start at Login (spec 7.12) is a Run value the app writes itself; it goes with the app if it starts this copy.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Command: String;
+begin
+  if (CurUninstallStep = usUninstall)
+    and RegQueryStringValue(HKCU, RunKey, 'Anniversary', Command)
+    and (CompareText(Command, '"' + ExpandConstant('{app}\Anniversary.exe') + '"') = 0) then
+  begin
+    RegDeleteValue(HKCU, RunKey, 'Anniversary');
+    RegDeleteValue(HKCU, ApprovedKey, 'Anniversary');
+  end;
+end;

@@ -13,7 +13,7 @@ Linux.
 | Area | Status |
 |---|---|
 | Spec and plan | `specs/spec.md` (source of truth), `specs/plan.md`; mocks in `specs/screens/` (approximate, larger than the real app; the spec's sizes win) |
-| Code | `Anniversary.Shared` (all UI and logic), `Anniversary.Desktop` (exe), `Anniversary.Tests` (189 tests, all passing) |
+| Code | `Anniversary.Shared` (all UI and logic), `Anniversary.Desktop` (exe and `StartAtLogin.cs`), `Anniversary.Tests` (203 tests; the 3 registry tests run only on Windows, so 200 pass and 3 skip elsewhere) |
 | Windows | Verified: v4's size and native font sizes; light and dark |
 | macOS | Verified on Apple Silicon. Fonts, line spacing, margins and corners have macOS-specific values (spec 7.1; lessons below) |
 | Linux | Verified on Fedora. No Linux-specific values were needed: Linux uses the Windows look with a 13 px font |
@@ -35,6 +35,7 @@ commands menu:
 - Edit People… (a grid editor with an Anniversaries sub-dialog)
 - Data File ▸ Open… (Ctrl/⌘+O), Save As… (Ctrl+Shift+S/⇧⌘S), Show in Folder
 - Calendar ▸ (countries, then International Days after a separator), Theme ▸ System/Light/Dark
+- Start at Login (macOS: Open at Login, also in the app menu): a check item for the running copy (spec 7.12)
 - About
 
 macOS also has the commands in the menu bar (`NativeMenu`); Windows and Linux ignore it.
@@ -43,7 +44,7 @@ Data files are looked up next to the exe, then in the app-data folder (`%APPDATA
 `~/Library/Application Support/Anniversary`, `~/.config/Anniversary`), then in built-in defaults. A data file chosen
 with Data File ▸ Open… or Save As… wins (spec 5.3). The built-in people list is empty; to see real data, open v4's
 `Anniversary.Data.json` with Data File ▸ Open…. The app writes only `usersettings.json` (theme, calendar and chosen
-data file) and the data file (from the editor and Save As…).
+data file), the data file (from the editor and Save As…) and, when asked, its Start at Login entry (spec 7.12).
 
 ## Decisions already made (don't revisit without asking the user)
 
@@ -101,6 +102,12 @@ data file) and the data file (from the editor and Save As…).
   Handy when the agent can't take screenshots; keep such a harness outside the repo. The same harness can check UI
   behaviour: click a button with `RaiseEvent(new RoutedEventArgs(Button.ClickEvent))`, and a macOS menu item by calling
   `NativeMenuItem`'s non-public `INativeMenuItemExporterEventsImplBridge.RaiseClicked()` through reflection.
+- **Headless isn't the real menu bar:** on macOS, Avalonia appends its own items (separators, Services, Hide, Quit) to
+  the app menu at start-up, which the headless platform doesn't. So smoke-test the packaged app too. System Events
+  (`osascript`) can read and click the real app's menu items and read their check marks (`AXMenuItemMarkChar`).
+- **Start at Login on macOS** (spec 7.12) uses `SMAppService.mainApp` through `objc_msgSend` P/Invokes. It works with
+  the ad-hoc signed app (checked on macOS 27: register, status, unregister, and the item in the real app menu), and
+  macOS even registers a bare executable, which the app still doesn't offer because a bare executable opens Terminal.
 
 ## Avalonia 12 gotchas
 
@@ -123,7 +130,7 @@ then:
 ```bash
 git clone https://github.com/dpokluda/anniversary.git && cd anniversary
 dotnet build Anniversary.slnx
-dotnet test --project Anniversary.Tests      # expect 189 passed
+dotnet test --project Anniversary.Tests      # expect 203: 200 passed, 3 skipped (registry tests run only on Windows)
 dotnet run --project Anniversary.Desktop
 ```
 
@@ -154,8 +161,10 @@ days" and Find stop at 31 December 9999, and Yesterday/Tomorrow do nothing at th
    - ✅ **packages** besides the `.zip` and `.tar.gz` (spec 10): a macOS `.dmg` with an ad-hoc signed `.app` (Apple
      Silicon and Intel), a Linux AppImage (the user chose it over an RPM) and a per-user Inno Setup installer for
      Windows (x64 and arm64). Check the installer on Windows and the AppImage on Fedora from the first CI run;
-   - **Start at Login**, an in-app check item (Windows Run key, macOS LaunchAgent, XDG autostart) that registers the
-     running executable (`$APPIMAGE` inside an AppImage); the Windows uninstaller should remove the Run value;
+   - ✅ **Start at Login** (spec 7.12): an in-app check item for the running copy (Windows Run key, macOS
+     `SMAppService` login item, XDG autostart; `$APPIMAGE` inside an AppImage); the Windows uninstaller removes the Run
+     value. Checked on macOS; check it on Windows (installed and from the `.zip`, incl. Task Manager's switch and the
+     uninstaller) and on Fedora (acceptance criterion 16);
    - **GitHub Releases** from a version tag (5.1.0).
 
    Signing (Apple Developer ID, a Windows code-signing certificate) isn't decided; without it, the user README explains

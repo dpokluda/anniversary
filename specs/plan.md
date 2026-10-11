@@ -113,7 +113,11 @@ Next (the user's plan, in this order):
    built and started on macOS), a Linux **AppImage** (user decision over an RPM: one file that runs on Fedora and other
    distributions, nothing to install) and an Inno Setup installer for Windows (per user, x64 and arm64). The installer
    and the AppImages are first built by CI; they still need a check on Windows and Fedora (acceptance criterion 15).
-3. **start-at-login** – the in-app setting (see "Idea: installers and start at login" below).
+3. **start-at-login** ✅ – **⋯ ▸ Start at Login** (macOS: **Open at Login**, also in the app menu), a check item in
+   the app rather than an installer option (user decision), for the copy that's running: the Run key on Windows (chosen
+   over a Startup-folder shortcut), Apple's login-item API on macOS (`SMAppService`, tested with the ad-hoc
+   signed app on macOS 27), XDG autostart on Linux; the Windows uninstaller removes the Run value (spec 7.12). Still
+   to check by hand on Windows and Fedora (acceptance criterion 16).
 4. **releases** – GitHub Releases from a version tag (5.1.0), with all packages and archives.
 
 Signing (Apple Developer ID, a Windows code-signing certificate) isn't decided; unsigned builds need the first-launch
@@ -151,23 +155,23 @@ Further ideas, not agreed yet:
 - Swedish/Finnish name days: their official lists are copyrighted, so check licensing first.
 - Astronomical days (solstices, equinoxes, full moons): computed, no licensing issue.
 
-## Idea: installers and start at login (installers done, start at login next)
+## Idea: installers and start at login (done)
 
-Each platform now has a package besides its archive (spec 10, **packages** above). Start at login is next and needs a
-spec section when it's picked up.
+Each platform has a package besides its archive (spec 10, **packages** above) and can start at login (spec 7.12,
+**start-at-login** above).
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | **Install** (done) | Per-user Inno Setup installer into `%LOCALAPPDATA%\Programs\Anniversary`: Start-menu shortcut and uninstaller, no admin rights. MSIX is possible but needs a trusted signing certificate. | The `.app` bundle in a `.dmg`, dragged into Applications; macOS apps rarely use installers. | An AppImage (user decision over an RPM). A Flatpak later, if wanted. |
-| **Start at login** | A value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | A LaunchAgent plist in `~/Library/LaunchAgents`, or the `SMAppService` login-item API (macOS 13+) for the `.app` | A `.desktop` file in `~/.config/autostart` (XDG autostart) |
+| **Start at login** (done) | The `Anniversary` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | `SMAppService.mainApp` (macOS 13+), listed under Login Items ▸ Open at Login; a LaunchAgent would show up under "Allow in the Background" with a notification instead | `~/.config/autostart/anniversary.desktop` (XDG autostart) |
 
-Suggestions (signing and start at login not decided yet):
+Suggestions (signing not decided yet):
 - **No data file is installed** (done). The app already starts with the empty built-in people list and creates
   `Anniversary.Data.json` in the app-data folder on the first Save (spec 5.6). An installer must never put a data file
   next to the executable: Program Files is read-only for users, so saving would fail.
-- **Start at login as an in-app setting** (⋯ ▸ Start at Login, a check item) rather than an installer step: per user,
-  no admin rights, works for copies that weren't installed, and can be turned off again. It needs a little platform code
-  in the desktop project and no packages. The Windows uninstaller should remove the entry too.
+- **Start at login as an in-app setting** (done): per user, no admin rights, works for copies that weren't installed,
+  and can be turned off again. The platform code is in the desktop project, with no packages, and the Windows
+  uninstaller removes the entry.
 - **Signing:** unsigned downloads get a SmartScreen warning on Windows and are blocked by Gatekeeper on macOS (Open
   Anyway, explained in the user README). Signing needs a Windows code-signing certificate and a paid Apple Developer
   account (Developer ID signing and notarization).

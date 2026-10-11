@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private readonly UserSettings _settings;
     private readonly NativeMenu _nativeCalendarMenu;
     private readonly Dictionary<AppTheme, NativeMenuItem> _nativeThemeItems;
+    private readonly NativeMenuItem _nativeStartAtLoginItem;
     private DateOnly _day;
 
     // Find state, kept between Find and Find Next (as in v4)
@@ -93,6 +94,23 @@ public partial class MainWindow : Window
             item.Value.Click += (_, _) => ChooseTheme(theme);
         }
 
+        // Start at Login (spec 7.12): macOS calls it Open at Login and has it in the app menu too.
+        NativeMenu appMenu = NativeMenu.GetMenu(App.Current!)!;
+        _nativeStartAtLoginItem = NativeItem(appMenu, "Open at Login");
+        _nativeStartAtLoginItem.Click += (_, _) => ToggleStartAtLogin();
+        appMenu.Opening += (_, _) => UpdateStartAtLoginChecks();
+        bool canStartAtLogin = App.StartAtLogin != null;
+        StartAtLoginItem.IsVisible = canStartAtLogin;
+        _nativeStartAtLoginItem.IsVisible = canStartAtLogin;
+
+        // Its separator comes right before it; macOS adds its own items (Services, Hide, Quit) after it.
+        var separator = (NativeMenuItem)appMenu.Items[appMenu.Items.IndexOf(_nativeStartAtLoginItem) - 1];
+        separator.IsVisible = canStartAtLogin;
+        if (OperatingSystem.IsMacOS())
+        {
+            StartAtLoginItem.Header = "Open at Login";
+        }
+
         NextDaysCaption.Text = $"Next {book.Config.NumberOfDaysAhead} days";
         UpdateThemeChecks();
         UpdateCalendarMenus();
@@ -138,7 +156,9 @@ public partial class MainWindow : Window
 
     private async void OnActivated(object? sender, EventArgs e)
     {
-        // Picks up changes made elsewhere, e.g. on another computer through a cloud drive (spec 7.11).
+        // Picks up changes made elsewhere: Start at Login in the OS settings (spec 7.12), and the data file, e.g. on
+        // another computer through a cloud drive (spec 7.11).
+        UpdateStartAtLoginChecks();
         await ReloadPeopleIfChanged();
     }
 
@@ -428,6 +448,33 @@ public partial class MainWindow : Window
         await ShowWarnings();
     }
 
+    private async void ToggleStartAtLogin()
+    {
+        if (App.StartAtLogin is not { } startAtLogin)
+        {
+            return;
+        }
+
+        try
+        {
+            startAtLogin.Set(!startAtLogin.IsOn());
+        }
+        catch (InvalidOperationException ex)
+        {
+            string name = StartAtLoginItem.Header as string ?? string.Empty;
+            await MessageDialog.Show(this, name, $"Could not change {name}: {ex.Message}");
+        }
+        UpdateStartAtLoginChecks();
+    }
+
+    private void UpdateStartAtLoginChecks()
+    {
+        // Read from the OS every time, so changes made in its own settings show (spec 7.12).
+        bool on = App.StartAtLogin?.IsOn() == true;
+        StartAtLoginItem.IsChecked = on;
+        _nativeStartAtLoginItem.IsChecked = on;
+    }
+
     private void OnYesterday(object? sender, RoutedEventArgs e)
     {
         ShowPreviousDay();
@@ -503,6 +550,11 @@ public partial class MainWindow : Window
         ChooseTheme(AppTheme.Dark);
     }
 
+    private void OnStartAtLogin(object? sender, RoutedEventArgs e)
+    {
+        ToggleStartAtLogin();
+    }
+
     private async void OnAbout(object? sender, RoutedEventArgs e)
     {
         await new AboutDialog().ShowDialog(this);
@@ -513,6 +565,7 @@ public partial class MainWindow : Window
         // Picks up calendar files added while the app runs (spec 7.10).
         _book.RefreshCalendars();
         UpdateCalendarMenus();
+        UpdateStartAtLoginChecks();
     }
 
     private static NativeMenuItem NativeItem(NativeMenu menu, params string[] headers)

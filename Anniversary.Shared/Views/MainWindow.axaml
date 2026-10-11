@@ -28,6 +28,7 @@
         <MenuItem x:Name="ThemeLightItem" Header="Light" ToggleType="Radio" GroupName="Theme" Click="OnThemeLight" />
         <MenuItem x:Name="ThemeDarkItem" Header="Dark" ToggleType="Radio" GroupName="Theme" Click="OnThemeDark" />
       </MenuItem>
+      <MenuItem x:Name="StartAtLoginItem" Header="Start at Login" ToggleType="CheckBox" Click="OnStartAtLogin" />
       <Separator />
       <MenuItem Header="About Anniversary…" Click="OnAbout" />
     </MenuFlyout>

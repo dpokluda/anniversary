@@ -82,11 +82,13 @@ anniversary\                        (repository root)
   Anniversary.Desktop\               WinExe for Windows/macOS/Linux
     Anniversary.Desktop.csproj       AssemblyName **Anniversary** (exe = Anniversary.exe / Anniversary), ApplicationIcon App.ico
     Program.cs
+    StartAtLogin.cs                  Start at Login (7.12): Windows Run value, macOS login item, Linux autostart entry
     app.manifest                     (from the Avalonia template; Windows DPI awareness)
     README.md                        the user guide, shipped next to the executable (10)
   Anniversary.Tests\
     Anniversary.Tests.csproj
-    DayTests.cs, FindTests.cs, LoadTests.cs, UserSettingsTests.cs, SaveTests.cs, CalendarTests.cs, EditorRowTests.cs
+    DayTests.cs, FindTests.cs, LoadTests.cs, UserSettingsTests.cs, SaveTests.cs, CalendarTests.cs, EditorRowTests.cs,
+    StartAtLoginTests.cs (also references Anniversary.Desktop)
     TempFolder.cs                    test helper: temporary folder that writes files and deletes itself
     TestFiles.cs                     test helper: writes the config, calendar and people JSON files and loads a book
 ```
@@ -548,6 +550,7 @@ their main menu there, and Android puts ⋮ there. macOS apps use the menu bar i
 | *separator* | | |
 | Calendar ▸ {calendars} | radio items, one per discovered calendar (display name), the active one checked, calendars without a locale after a separator; switches and saves it (7.10) | none |
 | Theme ▸ System / Light / Dark | radio items (`ToggleType="Radio"`, the current one is checked); applies the theme immediately and saves it (7.7) | none |
+| Start at Login (macOS: Open at Login) | check item, checked when this copy starts at login; turns it on or off (7.12). Hidden where the OS has no support | none |
 | *separator* | | |
 | About Anniversary… | opens About | none |
 
@@ -569,7 +572,8 @@ header and wires their `Click` in code.
 - **View**: Calendar ▸ {calendars}; Appearance ▸ System / Light / Dark (radio items, same behaviour as the ⋯ submenus)
 - **Go**: Yesterday, Tomorrow, Today, Change Date…
 - **Find**: Find… (⌘F), Find Next (⌘G)
-- Quit (⌘Q) and the app menu come from Avalonia/macOS automatically. **About Anniversary** is in the app menu (7.1).
+- Quit (⌘Q) and the app menu come from Avalonia/macOS automatically. **About Anniversary** is in the app menu (7.1),
+  followed by a separator and **Open at Login** (7.12).
 
 #### Find behaviour (state kept in `MainWindow` fields, as in v4)
 
@@ -729,9 +733,46 @@ on a cloud drive (OneDrive, iCloud Drive, Dropbox, …) and uses it from several
   which the user resolves. Opening a data file by double-clicking it needs installers and a file extension of its
   own (`specs/plan.md`).
 
+### 7.12 Start at Login
+
+The app can start when the user logs in. It's a setting in the app rather than an installer option (user decision),
+so it works for every download and can be changed at any time.
+
+- **⋯ ▸ Start at Login** (macOS: **Open at Login**, Apple's term, in the ⋯ menu and in the app menu after About
+  Anniversary and a separator): a check item, checked when **this copy** of the app starts at login. The state is read
+  from the OS each time the menu opens, so changes made in the OS's own settings show. Clicking turns it on or off; if
+  that fails, show *"Could not change Start at Login: {reason}"* (title and wording use the item's name).
+- The program registered is the running executable (`Environment.ProcessPath`); inside an AppImage it's the AppImage
+  file (`$APPIMAGE`, used only when the executable runs from `$APPDIR`). A copy that has moved shows unchecked, and
+  turning it on registers the new place.
+- **Windows:** the string value `Anniversary`, the quoted executable path, under
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (chosen over a Startup-folder shortcut: one value that .NET
+  reads and writes directly). Turning it off in Task Manager or Settings ▸ Apps ▸ Startup keeps that value and writes
+  flags to `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` (an odd first byte means
+  disabled), so the item shows unchecked; turning it on deletes those flags. The uninstaller removes both values if
+  they start the installed copy (10).
+- **macOS 13 and later:** Apple's login-item API, `SMAppService.mainApp` (`register`, `unregister`, `status`), called
+  through the Objective-C runtime. The app is listed in System Settings ▸ General ▸ Login Items ▸ Open at Login, the
+  list the Dock's *Options ▸ Open at Login* uses, and the item is checked when the status is *enabled*. Only the
+  `.app` has the item (the bare executable from the `.tar.gz` isn't a bundle). An app opened from Downloads or the
+  `.dmg` runs from a temporary read-only copy (App Translocation, a path containing `/AppTranslocation/`), so instead
+  of registering that, the reason given is *"Move Anniversary to the Applications folder, open it from there and try
+  again."*
+- **Linux:** an XDG autostart entry, `anniversary.desktop` in `$XDG_CONFIG_HOME/autostart` (default
+  `~/.config/autostart`), with `Type=Application`, `Name=Anniversary`, `Comment`, `Exec=` the quoted path and
+  `Terminal=false`. Desktop Entry quoting escapes `"`, `` ` ``, `$` and `\` with `\` and writes `%` as `%%`; the file
+  format then doubles every `\`. The item is checked when the file has exactly that `Exec` line and isn't disabled
+  (`Hidden=true` or `X-GNOME-Autostart-enabled=false`); turning it off deletes the file.
+- Code: `Anniversary.Desktop\StartAtLogin.cs`, so platform code stays out of `Anniversary.Shared`. Where the OS
+  supports it, `Program.Main` sets `App.StartAtLogin`: a function telling whether this copy starts at login and an
+  action turning it on or off, which throws `InvalidOperationException` with the reason. Left `null` (the macOS bare
+  executable, future mobile apps), the items are hidden.
+- Before deleting a copy that starts at login, turn it off (user README); the Windows uninstaller does that itself.
+
 ## 8. Application start-up
 
-- `Anniversary.Desktop\Program.cs`: `[STAThread] Main` → `BuildAvaloniaApp().StartWithClassicDesktopLifetime(args)`.
+- `Anniversary.Desktop\Program.cs`: `[STAThread] Main` → where the OS supports it, `App.StartAtLogin = (StartAtLogin.IsOn,
+  StartAtLogin.Set)` (7.12) → `BuildAvaloniaApp().StartWithClassicDesktopLifetime(args)`.
   `BuildAvaloniaApp()` must be `public static`, because the XAML previewer needs it: `AppBuilder.Configure<App>().UsePlatformDetect().LogToTrace()`.
 - `App.OnFrameworkInitializationCompleted`: for `IClassicDesktopStyleApplicationLifetime`, build the folder list (5.3),
   load `UserSettings` from the app-data folder (5.5) and apply its theme **before** creating the main window (so it opens
@@ -794,6 +835,12 @@ on a cloud drive (OneDrive, iCloud Drive, Dropbox, …) and uses it from several
     reloaded (with old warnings cleared); saving isn't a change; a deleted file isn't a change; `OpenDataFile` uses the
     file where it is and rejects invalid JSON, a missing file and a calendar file without changing anything; saving to a
     new path (Save As) makes it the data file; `UserSettings` round-trips `DataFile`.
+  - **StartAtLoginTests** (7.12, testing `Anniversary.Desktop`): the Linux autostart entry in a temporary folder, on
+    every OS: turning it on writes the entry with the quoted `Exec` line and reads as on; an entry for another path,
+    `Hidden=true` or `X-GNOME-Autostart-enabled=false` reads as off; turning it off deletes the entry; `Exec` quoting
+    of spaces, `"`, `` ` ``, `$`, `\` and `%`. On Windows only, the registry part under a scratch key: on and off,
+    another path reads as off, Task Manager's disabled flag reads as off and turning it on clears the flag. macOS's
+    login items are checked by hand (acceptance criterion 16).
 
 ## 10. Build, run and publish
 
@@ -824,7 +871,7 @@ want to install the app:
 
 | RIDs | Package | What it does |
 |---|---|---|
-| `win-x64`, `win-arm64` | `Anniversary-{version}-{rid}-setup.exe`, built with Inno Setup 6 from `packaging\windows\Anniversary.iss` | Installs for the current user only, without admin rights, into `%LOCALAPPDATA%\Programs\Anniversary`: `Anniversary.exe`, `README.md`, `THIRD-PARTY-NOTICES.md`, a Start-menu shortcut and an optional desktop shortcut, then offers to start the app. One fixed `AppId`, so a newer version (or the other architecture) updates in place. The uninstaller (Settings ▸ Apps) removes the app but never the app-data folder (5.3). |
+| `win-x64`, `win-arm64` | `Anniversary-{version}-{rid}-setup.exe`, built with Inno Setup 6 from `packaging\windows\Anniversary.iss` | Installs for the current user only, without admin rights, into `%LOCALAPPDATA%\Programs\Anniversary`: `Anniversary.exe`, `README.md`, `THIRD-PARTY-NOTICES.md`, a Start-menu shortcut and an optional desktop shortcut, then offers to start the app. One fixed `AppId`, so a newer version (or the other architecture) updates in place. The uninstaller (Settings ▸ Apps) removes the app but never the app-data folder (5.3), and removes Start at Login's Run value if it starts the installed copy (7.12). |
 | `osx-arm64`, `osx-x64` | `Anniversary-{version}-{rid}.dmg` | Holds `Anniversary.app`, an Applications shortcut to drag it onto, `README.md` and `THIRD-PARTY-NOTICES.md`. The bundle has `Contents/MacOS/Anniversary`, `Contents/Resources/App.icns` (`icon\App.icns`), the README and notices, and `Contents/Info.plist` from `packaging\macos\Info.plist` (id `cz.pokluda.anniversary`, name, version and copyright from `Directory.Build.props`, minimum macOS 12.0 as the published executable declares). It is ad-hoc signed with `codesign`: Apple Silicon requires signed code, and a downloaded unsigned bundle is reported as damaged instead of offering Open Anyway. |
 | `linux-x64`, `linux-arm64` | `Anniversary-{version}-{rid}.AppImage` (an AppImage rather than an RPM: user decision) | One portable file with nothing to install: `AppRun` (`packaging\linux\AppRun`), `anniversary.desktop`, the 256 px icon (`Anniversary.Shared\Assets\App.png`), `usr/bin/Anniversary` and the README and notices in `usr/share/doc/anniversary`. Built with appimagetool 1.9.1 and the AppImage type2 runtime 20251108 (static, needs no libfuse2), both downloaded at pinned versions and checked by SHA-256. |
 
@@ -854,7 +901,7 @@ or `Anniversary-{rid}.tar.gz` (macOS, Linux; tar keeps the executable bit), and 
 | C6 | Load warnings are shown after the main window opens. | Loading is UI-free and testable. |
 | C7 | macOS shortcuts ⌘F / ⌘G; follows the OS dark mode; Fluent look. | Platform conventions. |
 | C8 | `Model.Calendar` → `CalendarData`, `Model.Anniversary` → `AnniversaryData`. | Avoids name clashes. |
-| C9 | `appsettings.json` is never written by the app (v4's unused `SaveConfiguration` is dropped). The app writes only its own `usersettings.json` (5.5) and, through the editor, the people data file (5.6). | Keeps the user-edited config file untouched. |
+| C9 | `appsettings.json` is never written by the app (v4's unused `SaveConfiguration` is dropped). The app writes only its own `usersettings.json` (5.5), through the editor the people data file (5.6), and, when asked, its Start at Login entry (7.12). | Keeps the user-edited config file untouched. |
 | C10 | Text in the value boxes is selectable (`SelectableTextBlock`). | Keeps v4's copy-from-textbox ability. |
 | C11 | Logic uses `DateOnly` instead of `DateTime`. The day is passed in, with no `TimeProvider`. | Dates without times are clearer; the logic doesn't depend on the clock. |
 | C12 | New **Theme ▸ System / Light / Dark** choice (in the ⋯/right-click menu and in the macOS View menu), remembered between runs. "System" follows OS changes live. | User request. |
@@ -867,6 +914,7 @@ or `Anniversary-{rid}.tar.gz` (macOS, Linux; tar keeps the executable bit), and 
 | C19 | Calendar files may use **rule keys** for dates that move from year to year (5.1, 6.3). A new **US** holiday calendar (federal holidays and well-known observances) ships. The default calendar follows the **OS region** (e.g. Czech in Czechia) and is US where no calendar matches; v4 always used Czech. The Czech calendar adds Velký pátek and Velikonoční pondělí. Unknown calendar keys are reported (5.4). | User request: a calendar for countries without name days, starting with the US, and a sensible default for everyone. |
 | C20 | New **Data File ▸ Open… / Save As… / Show in Folder** (7.11). The chosen file is remembered per computer, reloaded when it changes elsewhere, and the editor asks before overwriting changes made elsewhere or saving over a file that couldn't be loaded (7.8). | User request: share the data file with family, and use one file from several computers through a cloud drive. |
 | C21 | New **International Days** calendar: 56 well-known UN international days plus five fun days such as International Beer Day (5.7). | User request: something to show where there are no name days. |
+| C22 | New **Start at Login** check item (macOS: **Open at Login**, 7.12): a Run value on Windows, a login item on macOS, an autostart entry on Linux. | User request; a setting in the app rather than an installer option, so it works for every download. |
 
 ## 12. Acceptance criteria
 
@@ -911,6 +959,11 @@ or `Anniversary-{rid}.tar.gz` (macOS, Linux; tar keeps the executable bit), and 
     uninstalling removes it and keeps the app-data folder. On macOS, the app dragged from the `.dmg` to Applications
     starts after *Open Anyway*, with its own name and icon in the Dock and the menu bar, and without a Terminal window.
     On Fedora, the AppImage starts after being made executable.
+16. **Start at Login** (7.12): turning it on makes the app start at the next login on Windows (installed, and from the
+    `.zip`), on macOS (the app in Applications, listed under Login Items) and on Fedora (the AppImage). Turning it off,
+    in the app or in Task Manager / Login Items, unchecks it and stops that. On macOS, an app opened from Downloads or
+    the `.dmg` gives the "Move Anniversary to the Applications folder…" message. The Windows uninstaller removes the
+    Run value.
 
 ## 13. Implementation order
 

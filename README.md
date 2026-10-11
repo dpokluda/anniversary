@@ -95,8 +95,14 @@ xattr -d com.apple.quarantine Anniversary   # only if it was downloaded (Gatekee
 
 On macOS the commands are also in the menu bar: **File** (Edit People…, Open Data File… ⌘O, Save Data File As… ⇧⌘S,
 Show Data File in Finder), **View** (Calendar, Appearance),
-**Go** (Yesterday, Tomorrow, Today, Change Date…), **Find** (Find… ⌘F, Find Next ⌘G), and **About Anniversary** in the
-app menu.
+**Go** (Yesterday, Tomorrow, Today, Change Date…), **Find** (Find… ⌘F, Find Next ⌘G), and **About Anniversary** and
+**Open at Login** in the app menu.
+
+**Start at Login** (macOS: Open at Login, spec 7.12) is a check item in the ⋯ menu. `Anniversary.Desktop/StartAtLogin.cs`
+writes the `Anniversary` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` on Windows, registers a login
+item with Apple's `SMAppService` on macOS 13 and later (the `.app` only), and writes
+`~/.config/autostart/anniversary.desktop` on Linux. It always registers the copy that's running (inside an AppImage,
+the AppImage file).
 
 ### Running on Linux
 
@@ -170,7 +176,7 @@ licenses are described in [`calendars/README.md`](calendars/README.md).
 | Project | Contents |
 |---|---|
 | `Anniversary.Shared` | everything shared by all platforms: model, `AnniversaryBook` (all logic), windows and dialogs, embedded defaults |
-| `Anniversary.Desktop` | the Windows/macOS/Linux executable (`Program.cs`) and the user guide shipped with it (`README.md`) |
+| `Anniversary.Desktop` | the Windows/macOS/Linux executable (`Program.cs`), Start at Login (`StartAtLogin.cs`) and the user guide shipped with it (`README.md`) |
 | `Anniversary.Tests` | xUnit tests in the classic style: real objects and real files, no mocks |
 | `icon/` | the app icon and the script that draws it (see [`icon/README.md`](icon/README.md)) |
 | `calendars/` | calendars (name days and holidays) and the script that builds them |

@@ -122,10 +122,12 @@
     </Style>
   </Application.Styles>
 
-  <!-- macOS application menu (ignored on Windows and Linux) -->
+  <!-- macOS application menu (ignored on Windows and Linux); MainWindow wires Open at Login (spec 7.12) -->
   <NativeMenu.Menu>
     <NativeMenu>
       <NativeMenuItem Header="About Anniversary" Click="OnAbout" />
+      <NativeMenuItemSeparator />
+      <NativeMenuItem Header="Open at Login" ToggleType="CheckBox" />
     </NativeMenu>
   </NativeMenu.Menu>
 </Application>

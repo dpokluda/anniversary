@@ -19,7 +19,8 @@ and copyright come from `Directory.Build.props`.
 
 - **Windows:** the installer is per user, without admin rights, into `%LOCALAPPDATA%\Programs\Anniversary`. Never
   change the `AppId` in `Anniversary.iss`: it's how a newer installer finds the installed app and updates it. The
-  uninstaller leaves the app-data folder alone.
+  uninstaller leaves the app-data folder alone, and removes Start at Login's Run value if it starts the installed copy
+  (spec 7.12; its `[Code]` section).
 - **macOS:** the `.app` gets an ad-hoc signature (`codesign --sign -`), checked with `codesign --verify --strict`.
   Apple Silicon refuses unsigned code, and a downloaded bundle without a valid signature is reported as damaged instead
   of offering Open Anyway. It isn't notarized, so Gatekeeper still blocks the first start (the user README explains

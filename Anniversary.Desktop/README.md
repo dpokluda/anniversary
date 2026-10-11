@@ -52,11 +52,15 @@ anniversaries (with the years), and everything coming up in the next 7 days.
 
 - **Yesterday** and **Tomorrow** move by one day. Click the date to pick any day.
 - The other commands are in the **⋯** button at the top right, or right-click anywhere in the window (on macOS they're
-  also in the menu bar): Today, Change Date, Find, Find Next, Edit People, Data File, Calendar, Theme and About.
+  also in the menu bar): Today, Change Date, Find, Find Next, Edit People, Data File, Calendar, Theme, Start at Login
+  and About.
 - **Find** looks for a name among your people and in the calendar.
 - Shortcuts: Ctrl+F finds, F3 finds the next one, Ctrl+O opens a data file and Ctrl+Shift+S saves it under a new name
   (macOS: ⌘F, ⌘G, ⌘O and ⇧⌘S).
 - **Theme** switches between light and dark, or follows your system (macOS: **View ▸ Appearance**).
+- **Start at Login** starts the app whenever you log in; choose it again to stop that. On macOS it's called **Open at
+  Login** (also in the **Anniversary** menu) and works for the app in Applications. Windows (Task Manager ▸ Startup
+  apps) and macOS (System Settings ▸ General ▸ Login Items) list it too, and turning it off there works as well.
 
 ## Your people
 
@@ -99,9 +103,10 @@ the years:
 
 ## Removing it
 
-On Windows, uninstall Anniversary in **Settings ▸ Apps**; on macOS, drag it from Applications to the Trash; on Linux,
-delete the AppImage. From an archive, delete the app's folder. Your people and settings stay in the data folder above;
-delete it too to remove everything.
+If you turned on **Start at Login**, turn it off first (the Windows uninstaller does that for you). Then, on Windows,
+uninstall Anniversary in **Settings ▸ Apps**; on macOS, drag it from Applications to the Trash; on Linux, delete the
+AppImage. From an archive, delete the app's folder. Your people and settings stay in the data folder above; delete it
+too to remove everything.
 
 ## License
 

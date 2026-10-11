@@ -34,6 +34,13 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// Gets or sets Start at Login (spec 7.12): <c>IsOn</c> tells whether this copy starts when the user logs in, and
+    /// <c>Set</c> turns that on or off, throwing <see cref="InvalidOperationException"/> with the reason when it can't.
+    /// The desktop project sets it where the OS supports it; <see langword="null"/> hides the menu items.
+    /// </summary>
+    public static (Func<bool> IsOn, Action<bool> Set)? StartAtLogin { get; set; }
+
+    /// <summary>
     /// Applies a theme to the whole application.
     /// </summary>
     /// <param name="theme">The theme to apply.</param>

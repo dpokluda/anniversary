@@ -15,6 +15,10 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (StartAtLogin.IsSupported)
+        {
+            App.StartAtLogin = (StartAtLogin.IsOn, StartAtLogin.Set);
+        }
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
