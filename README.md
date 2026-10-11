@@ -4,7 +4,9 @@
 
 Shows name days, birthdays and anniversaries for a day. It's a cross-platform rewrite of the WinForms
 Anniversary v4 (kept in a separate repository) using [Avalonia UI](https://avaloniaui.net/) on .NET 10, and runs on Windows, macOS
-and Linux. The design is in [`specs/spec.md`](specs/spec.md) and [`specs/plan.md`](specs/plan.md).
+and Linux. The design is in [`specs/spec.md`](specs/spec.md) and [`specs/plan.md`](specs/plan.md). This README is for
+developers; the guide for people using the app is [`Anniversary.Desktop/README.md`](Anniversary.Desktop/README.md),
+which comes with every download.
 
 ## Build, test, run
 
@@ -24,8 +26,9 @@ Windows, macOS and Linux for every push to `main` and every pull request, then p
 
 ## Publish
 
-Each platform gets a single self-contained executable plus `THIRD-PARTY-NOTICES.md` (required by the license of the
-bundled name-day calendars; keep it next to the executable).
+Each platform gets a single self-contained executable plus `README.md`, the guide for users
+([`Anniversary.Desktop/README.md`](Anniversary.Desktop/README.md)), and `THIRD-PARTY-NOTICES.md` (required by the
+license of the bundled name-day calendars; keep it next to the executable).
 
 ```powershell
 dotnet publish Anniversary.Desktop -c Release -r win-x64     --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\win-x64
@@ -45,7 +48,7 @@ plain executable, not a signed `.app` bundle.
 
 Every CI run that passes ([Actions](https://github.com/dpokluda/anniversary/actions/workflows/ci.yml)) offers one
 download per platform, kept for 30 days: `Anniversary-{rid}.zip` for Windows and `Anniversary-{rid}.tar.gz` for macOS
-and Linux (downloading needs a GitHub sign-in). Each holds a `{rid}` folder with the executable and
+and Linux (downloading needs a GitHub sign-in). Each holds a `{rid}` folder with the executable, `README.md` and
 `THIRD-PARTY-NOTICES.md`. The `.tar.gz` keeps the executable flag, so `tar -xzf Anniversary-linux-x64.tar.gz` gives a
 folder that's ready to run.
 
@@ -138,7 +141,7 @@ licenses are described in [`calendars/README.md`](calendars/README.md).
 | Project | Contents |
 |---|---|
 | `Anniversary.Shared` | everything shared by all platforms: model, `AnniversaryBook` (all logic), windows and dialogs, embedded defaults |
-| `Anniversary.Desktop` | the Windows/macOS/Linux executable (`Program.cs`) |
+| `Anniversary.Desktop` | the Windows/macOS/Linux executable (`Program.cs`) and the user guide shipped with it (`README.md`) |
 | `Anniversary.Tests` | xUnit tests in the classic style: real objects and real files, no mocks |
 | `icon/` | the app icon and the script that draws it (see [`icon/README.md`](icon/README.md)) |
 | `calendars/` | calendars (name days and holidays) and the script that builds them |

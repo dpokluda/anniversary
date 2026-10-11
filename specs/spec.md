@@ -83,6 +83,7 @@ anniversary\                        (repository root)
     Anniversary.Desktop.csproj       AssemblyName **Anniversary** (exe = Anniversary.exe / Anniversary), ApplicationIcon App.ico
     Program.cs
     app.manifest                     (from the Avalonia template; Windows DPI awareness)
+    README.md                        the user guide, shipped next to the executable (10)
   Anniversary.Tests\
     Anniversary.Tests.csproj
     DayTests.cs, FindTests.cs, LoadTests.cs, UserSettingsTests.cs, SaveTests.cs, CalendarTests.cs, EditorRowTests.cs
@@ -803,10 +804,17 @@ dotnet run --project Anniversary.Desktop
 dotnet publish Anniversary.Desktop -c Release -r <rid> --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish\<rid>
 ```
 
-RIDs: `win-x64`, `win-arm64`, `osx-arm64`, `osx-x64`, `linux-x64`, `linux-arm64`. Publishing copies `calendars\THIRD-PARTY-NOTICES.md` next to the executable. The README documents these commands and the data-file locations (5.3),
+RIDs: `win-x64`, `win-arm64`, `osx-arm64`, `osx-x64`, `linux-x64`, `linux-arm64`. Publishing copies the user README
+(below) and `calendars\THIRD-PARTY-NOTICES.md` next to the executable. The README documents these commands and the data-file locations (5.3),
 including how to move personal data from v4: copy `Anniversary.Data.json` (and optionally `appsettings.json`) into the
 app-data folder.
 Building macOS/Linux output on Windows is fine. Running and checking it needs the target OS.
+
+**User README** (`Anniversary.Desktop\README.md`, shipped as `README.md` in every archive and installer): the one
+document for people who use the app; the repository's README is for developers. Concise Markdown that also reads well as
+plain text, covering what the app does, starting it on each OS (including the first-launch steps for unsigned builds),
+using it (the window, commands and shortcuts), the people and sharing them (7.11), the calendars, the data folder and
+`appsettings.json`, removing the app, and the license. Every change users can see updates it.
 
 **CI** (`.github\workflows\ci.yml`) runs on every push to `main`, on pull requests and on demand. It builds the
 solution with warnings as errors and runs the tests on Windows, macOS and Linux. If they pass, it publishes each RID

@@ -106,7 +106,8 @@ Phase 1 is done and verified on Windows, macOS and Linux.
 15. **international-days** – The International Days calendar: 56 well-known UN days plus five fun days (spec 5.7). ✅
 
 Next (the user's plan, in this order):
-1. **user-readme** – a short README for users, shipped in every archive and installer.
+1. **user-readme** ✅ – `Anniversary.Desktop/README.md`, the guide for users, shipped as `README.md` next to the
+   executable in every archive (and later in every installer); spec 10.
 2. **packages**, besides the `.zip` and `.tar.gz`: macOS `.app` in a `.dmg` (Apple Silicon and Intel); a Fedora
    package (an RPM is suggested, an AppImage is the alternative; not decided yet); an Inno Setup installer for Windows
    (per user, x64 and arm64).

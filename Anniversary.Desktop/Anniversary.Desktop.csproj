@@ -30,6 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The README for users (spec 10), shipped in every archive and installer. -->
+    <None Update="README.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <!-- Required by the MIT license of the bundled name-day data (spec 5.7). -->
     <None Include="..\calendars\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
