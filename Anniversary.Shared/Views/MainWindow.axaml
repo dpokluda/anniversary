@@ -22,7 +22,7 @@
         <MenuItem Header="Show in Folder" Click="OnShowDataFile" />
       </MenuItem>
       <Separator />
-      <MenuItem x:Name="CalendarMenu" Header="Nameday Calendar" />
+      <MenuItem x:Name="CalendarMenu" Header="Calendar" />
       <MenuItem Header="Theme">
         <MenuItem x:Name="ThemeSystemItem" Header="System" ToggleType="Radio" GroupName="Theme" Click="OnThemeSystem" />
         <MenuItem x:Name="ThemeLightItem" Header="Light" ToggleType="Radio" GroupName="Theme" Click="OnThemeLight" />
@@ -47,7 +47,7 @@
       </NativeMenuItem>
       <NativeMenuItem Header="View">
         <NativeMenu>
-          <NativeMenuItem Header="Nameday Calendar">
+          <NativeMenuItem Header="Calendar">
             <NativeMenu />
           </NativeMenuItem>
           <NativeMenuItem Header="Appearance">

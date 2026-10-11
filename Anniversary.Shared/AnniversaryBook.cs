@@ -112,7 +112,8 @@ public sealed class AnniversaryBook
     public string AppDataFolder { get; }
 
     /// <summary>
-    /// Gets the available name-day calendars, sorted by display name.
+    /// Gets the available calendars: those with a locale (a country) by display name, then those without one
+    /// (e.g. International Days) by display name.
     /// </summary>
     public IReadOnlyList<CalendarInfo> Calendars => _calendars;
 
@@ -688,7 +689,12 @@ public sealed class AnniversaryBook
         {
             _calendars.Add(new CalendarInfo(CalendarFile, data?.Name ?? DisplayNameFromFile(CalendarFile), data?.Locale));
         }
-        _calendars.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCulture));
+
+        // Calendars for a region (with a locale) first, then the others, e.g. International Days (spec 5.7).
+        _calendars = _calendars
+            .OrderBy(c => string.IsNullOrEmpty(c.Locale))
+            .ThenBy(c => c.DisplayName, StringComparer.CurrentCulture)
+            .ToList();
     }
 
     // The first calendar (by display name) whose locale has the culture's region, e.g. "en-CZ" -> CZ -> Czech;

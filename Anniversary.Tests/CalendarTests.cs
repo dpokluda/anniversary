@@ -22,11 +22,15 @@ public sealed class CalendarTests : IDisposable
     {
         AnniversaryBook book = AnniversaryBook.Load(null);
 
-        Assert.Equal(11, book.Calendars.Count);
+        Assert.Equal(12, book.Calendars.Count);
         Assert.Contains(book.Calendars, c => c.FileName == "Anniversary.Calendar.US.json" && c.DisplayName == "United States");
         Assert.Contains(book.Calendars, c => c.FileName == "Anniversary.Calendar.Czech.json" && c.DisplayName == "Czechia (Česko)");
         Assert.Contains(book.Calendars, c => c.FileName == "Anniversary.Calendar.Latvian.json" && c.Locale == "lv-LV");
-        Assert.Equal(book.Calendars.OrderBy(c => c.DisplayName, StringComparer.CurrentCulture), book.Calendars);
+        Assert.Equal(
+            book.Calendars.OrderBy(c => string.IsNullOrEmpty(c.Locale)).ThenBy(c => c.DisplayName, StringComparer.CurrentCulture),
+            book.Calendars);
+        Assert.Equal("International Days", book.Calendars[^1].DisplayName);
+        Assert.Null(book.Calendars[^1].Locale);
     }
 
     [Fact]
@@ -36,8 +40,8 @@ public sealed class CalendarTests : IDisposable
 
         AnniversaryBook book = AnniversaryBook.Load(null, _exe.FolderPath, _appData.FolderPath);
 
-        Assert.Equal(12, book.Calendars.Count);
-        Assert.Contains(book.Calendars, c => c.DisplayName == "Test");
+        Assert.Equal(13, book.Calendars.Count);
+        Assert.Equal(["International Days", "Test"], book.Calendars.TakeLast(2).Select(c => c.DisplayName));
     }
 
     [Fact]

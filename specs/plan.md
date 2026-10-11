@@ -56,8 +56,8 @@ Later phases add `Anniversary.iOS` (and maybe `Anniversary.Android`) next to `An
 | Commands (v4 system menu) | "⋯" button at the top-right of the "Today is" section, plus the same menu on right-click, plus the macOS menu bar. This follows the established "more" menu position in Windows 11, GNOME and Android apps. |
 | Shortcuts | Ctrl/⌘+F (Find), F3 / ⌘G (Find Next); clicking the date opens Change Date. |
 | Data files | Looked up next to the exe, then in the user app-data folder, then in built-in (embedded) defaults. The embedded people file is **empty** (user decision), so no personal data is compiled into the binaries. Phase 1 ships only the Czech name-day calendar; another calendar can be selected with `calendarFile`. |
-| Name-day calendars | **⋯ ▸ Nameday Calendar ▸** lists the calendar files found (`Anniversary.Calendar.*.json` in the exe folder, app-data and the built-in calendars); the choice is remembered in `usersettings.json`. **10 calendars ship**: Czech (v4), Austrian, Bulgarian, French, Hungarian, Italian, Polish, Russian, Slovak (radoone/nameday-mcp, MIT) and Latvian (official list, CC0). They are generated reproducibly by `calendars\Build-Calendars.ps1` from pinned sources and validated; sources, checks and exclusions are in `calendars\README.md`. Left out: Croatian (damaged data), Greek (incomplete, partly tied to Easter), Swedish/Finnish (copyrighted), and others with no verified open source yet. |
-| Holiday calendars | Calendar files may use **rule keys** for floating dates: `11-Thu-4`, `05-Mon-last` and `easter`, each with an optional ±n-day offset such as `easter+1` (spec 5.1, 6.3). A **US** calendar ships: the 11 federal holidays of 5 U.S.C. 6103(a) plus well-known observances. The **default calendar follows the OS region** (the region part of each calendar's `locale`, e.g. Czech in Czechia) and is **US** where no calendar matches; a menu choice or `calendarFile` wins. The US entries are written in `Build-Calendars.ps1`, each with its source, and tests check the federal holidays against OPM's schedules. The Czech calendar gets Velký pátek and Velikonoční pondělí. The menu keeps the name **Nameday Calendar**. Names on the same day are joined with ", ". Not yet: observed days off, Orthodox Easter. |
+| Name-day calendars | **⋯ ▸ Calendar ▸** (first called Nameday Calendar) lists the calendar files found (`Anniversary.Calendar.*.json` in the exe folder, app-data and the built-in calendars); the choice is remembered in `usersettings.json`. **10 calendars ship**: Czech (v4), Austrian, Bulgarian, French, Hungarian, Italian, Polish, Russian, Slovak (radoone/nameday-mcp, MIT) and Latvian (official list, CC0). They are generated reproducibly by `calendars\Build-Calendars.ps1` from pinned sources and validated; sources, checks and exclusions are in `calendars\README.md`. Left out: Croatian (damaged data), Greek (incomplete, partly tied to Easter), Swedish/Finnish (copyrighted), and others with no verified open source yet. |
+| Holiday calendars | Calendar files may use **rule keys** for floating dates: `11-Thu-4`, `05-Mon-last` and `easter`, each with an optional ±n-day offset such as `easter+1` (spec 5.1, 6.3). A **US** calendar ships: the 11 federal holidays of 5 U.S.C. 6103(a) plus well-known observances. The **default calendar follows the OS region** (the region part of each calendar's `locale`, e.g. Czech in Czechia) and is **US** where no calendar matches; a menu choice or `calendarFile` wins. The US entries are written in `Build-Calendars.ps1`, each with its source, and tests check the federal holidays against OPM's schedules. The Czech calendar gets Velký pátek and Velikonoční pondělí. The menu was renamed from Nameday Calendar to **Calendar** (user decision), and calendars without a locale (International Days) come last, after a separator. Names on the same day are joined with ", ". An **International Days** calendar (56 well-known UN days plus five fun days, no locale) ships too. Not yet: observed days off, Orthodox Easter. |
 | Sharing the data file | **⋯ ▸ Data File ▸ Open… / Save As… / Show in Folder** (macOS: File menu, ⌘O / ⇧⌘S). Open… uses the chosen file **where it is** (never copied; the user chose this over asking or a separate Import), so a family member opens the file you sent, and each of your computers opens the same file on a cloud drive. The choice is remembered per computer in `usersettings.json` and wins over `dataFile` in `appsettings.json`. A missing file keeps its link and is picked up when it appears; the file is reloaded when it changes elsewhere; the editor asks before overwriting such changes or saving over a file that couldn't be loaded. No merging. Double-click to open waits for the installers (needs its own file extension). |
 | People editor | **Edit People…** dialog with a grid (Name, Nameday, Birthday, Anniversaries with an Edit… button) and a nested Anniversaries dialog (date → name). Saves the data file (to app-data when the data came from the empty default). Mocked and specified (spec 5.6, 7.8, 7.9); user-approved for phase 1; implemented after the core app. |
 | Dates | `DateOnly` in all logic. The day is passed in; only the UI reads "today". No `TimeProvider`. |
@@ -94,7 +94,7 @@ Phase 1 is done and verified on Windows, macOS and Linux.
 8. **assets** – Icon, default data/config files as embedded resources. ✅
 9. **publish** – Self-contained publish for win-x64, osx-arm64, osx-x64, linux-x64; `README.md`. ✅
 10. **people-editor** – People editor + Anniversaries dialog, saving, `SaveTests`. ✅
-11. **calendar-chooser** – Calendar discovery, the Nameday Calendar menu, remembering the choice, `CalendarTests`, Czech metadata. ✅
+11. **calendar-chooser** – Calendar discovery, the Nameday Calendar menu (now **Calendar**), remembering the choice, `CalendarTests`, Czech metadata. ✅
 12. **ci** – GitHub Actions: build and test on Windows, macOS and Linux, then publish every RID, now including
     `win-arm64` and `linux-arm64` (spec 10). ✅
 13. **calendar-rules** – Rule keys for floating dates, the US holiday calendar, the default calendar chosen by the OS
@@ -103,14 +103,22 @@ Phase 1 is done and verified on Windows, macOS and Linux.
 14. **data-file** – Data File ▸ Open… / Save As… / Show in Folder, the chosen file remembered per computer, reloading
     when it changes elsewhere, and prompts before overwriting such changes or a file that couldn't be loaded
     (spec 5.5, 5.6, 7.8, 7.11). ✅
+15. **international-days** – The International Days calendar: 56 well-known UN days plus five fun days (spec 5.7). ✅
 
-Next: the **international-days** calendar (below). The **mac-app** bundle (`Info.plist`, `App.icns`, app name, for a
-proper Dock icon and name; optionally Developer ID signing and notarization) and the installers come later (user
-decision).
+Next (the user's plan, in this order):
+1. **user-readme** – a short README for users, shipped in every archive and installer.
+2. **packages**, besides the `.zip` and `.tar.gz`: macOS `.app` in a `.dmg` (Apple Silicon and Intel); a Fedora
+   package (an RPM is suggested, an AppImage is the alternative; not decided yet); an Inno Setup installer for Windows
+   (per user, x64 and arm64).
+3. **start-at-login** – the in-app setting (see "Idea: installers and start at login" below).
+4. **releases** – GitHub Releases from a version tag (5.1.0), with all packages and archives.
+
+Signing (Apple Developer ID, a Windows code-signing certificate) isn't decided; unsigned builds need the first-launch
+steps the user README will explain.
 Follow-ups: one task per additional name-day calendar (license checked, every date verified against its source).
 Future phases: **ios** (phase 2), **android** (phase 3, optional).
 
-## Holiday and observance calendars (in progress)
+## Holiday and observance calendars (done)
 
 Countries without name days (the US first) show public holidays or observance days on the "Today is" line.
 
@@ -124,9 +132,11 @@ Countries without name days (the US first) show public holidays or observance da
    St. Patrick's Day, Daylight Saving Time begins/ends, April Fools' Day, Good Friday, Easter, Earth Day, Cinco de
    Mayo, Mother's Day, Flag Day, Father's Day, Patriot Day, Halloween, Black Friday, Christmas Eve, New Year's Eve).
    The Czech calendar also got Velký pátek and Velikonoční pondělí.
-3. **international-days** – An "International Days" calendar: the UN list of international days plus well-known fun
-   days (Pi Day 3/14, Star Wars Day 5/4, World Emoji Day 7/17, Talk Like a Pirate Day 9/19, International Beer Day =
-   first Friday of August). Compile it ourselves; don't copy commercial "national day" sites (copyrighted).
+3. **international-days** ✅ – `Anniversary.Calendar.International.json` ("International Days", no locale): 56
+   well-known days chosen with the user from the UN list of international days (each with its UN resolution), plus the
+   fun days Pi Day 3/14, Star Wars Day 5/4, World Emoji Day 7/17, Talk Like a Pirate Day 9/19 and International Beer
+   Day (first Friday of August). The full UN list (239 days on 187 dates, many with long names) was too much for the
+   small window. Compiled ourselves; no commercial "national day" sites (copyrighted).
 
 Further ideas, not agreed yet:
 - Observed days off: when a fixed federal holiday falls on a weekend, also show the Friday before or the Monday after

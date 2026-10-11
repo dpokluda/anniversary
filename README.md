@@ -63,7 +63,7 @@ xattr -d com.apple.quarantine Anniversary   # only if it was downloaded (Gatekee
 ```
 
 On macOS the commands are also in the menu bar: **File** (Edit People…, Open Data File… ⌘O, Save Data File As… ⇧⌘S,
-Show Data File in Finder), **View** (Nameday Calendar, Appearance),
+Show Data File in Finder), **View** (Calendar, Appearance),
 **Go** (Yesterday, Tomorrow, Today, Change Date…), **Find** (Find… ⌘F, Find Next ⌘G), and **About Anniversary** in the
 app menu.
 
@@ -82,8 +82,8 @@ The app needs fontconfig, libX11, libICE and libSM, which desktop distributions 
 
 ## Your data
 
-The app ships with an empty people list and 11 calendars: the US holiday calendar and 10 name-day calendars. It looks
-for each file in this order, and the first one found wins:
+The app ships with an empty people list and 12 calendars: the US holiday calendar, International Days and 10 name-day
+calendars. It looks for each file in this order, and the first one found wins:
 
 1. next to the executable,
 2. the user app-data folder:
@@ -122,8 +122,9 @@ calendar menu once (a copied v4 `appsettings.json` already selects it).
 
 The default calendar is the one for your OS region, for example Czech in Czechia or Slovak in Slovakia. For any other
 region it's the **United States** calendar: the federal holidays plus well-known observances such as Mother's Day and
-Halloween. The name-day calendars list names instead. To use another one, choose it with **⋯ ▸ Nameday Calendar**
-(macOS: **View ▸ Nameday Calendar**); the choice is remembered. A `calendarFile` in your own `appsettings.json` also
+Halloween. The name-day calendars list names instead. **International Days** lists well-known UN days, such as World
+Water Day and the International Day of Peace, plus a few fun ones like Pi Day and International Beer Day. To use another one, choose it with **⋯ ▸ Calendar**
+(macOS: **View ▸ Calendar**), where International Days comes last; the choice is remembered. A `calendarFile` in your own `appsettings.json` also
 works. To add a calendar, put an `Anniversary.Calendar.{Name}.json` file into the app-data folder; it appears in the
 menu the next time it opens.
 

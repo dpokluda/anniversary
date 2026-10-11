@@ -8,8 +8,8 @@
     Downloads each name-day source at a pinned version, converts it to the Anniversary calendar format (spec 5.1),
     validates it, and writes it next to this script. The Czech calendar is not generated; it comes from
     Anniversary v4 and gets its metadata and the two Czech public holidays that move with Easter added here.
-    The US holiday calendar is written from the table below, which gives the source of every entry.
-    Re-run the script to reproduce the files exactly.
+    The US holiday and International Days calendars are written from the tables below, which give the source of every
+    entry. Re-run the script to reproduce the files exactly.
 
     Sources and licenses are listed in README.md and THIRD-PARTY-NOTICES.md.
 #>
@@ -81,7 +81,10 @@ function Write-Calendar([string] $fileName, [string] $name, [string] $locale, [s
     $lines = [System.Collections.Generic.List[string]]::new()
     $lines.Add('{')
     $lines.Add("  `"name`": $(ConvertTo-JsonString $name),")
-    $lines.Add("  `"locale`": $(ConvertTo-JsonString $locale),")
+    if ($locale)
+    {
+        $lines.Add("  `"locale`": $(ConvertTo-JsonString $locale),")
+    }
     $lines.Add("  `"source`": $(ConvertTo-JsonString $source),")
     $lines.Add("  `"license`": $(ConvertTo-JsonString $license),")
     $lines.Add('  "calendar": {')
@@ -102,7 +105,7 @@ function Write-Calendar([string] $fileName, [string] $name, [string] $locale, [s
     {
         throw "$fileName : round-trip check failed"
     }
-    Write-Host ("{0,-12} {1,3} entries  {2}" -f $fileName, $keys.Count, $name)
+    Write-Host ("{0,-13} {1,3} entries  {2}" -f $fileName, $keys.Count, $name)
 }
 
 # Czech: from Anniversary v4, metadata added, plus the two public holidays that move with Easter
@@ -151,6 +154,77 @@ $us = [ordered]@{
 Write-Calendar 'US' 'United States' 'en-US' `
     '5 U.S.C. 6103(a) (federal holidays); 36 U.S.C. 109, 110, 117, 144 (observances); 15 U.S.C. 260a (daylight saving time); traditional dates' `
     'MIT, Copyright (c) David Pokluda (part of Anniversary; see LICENSE)' $us -Holidays
+
+# International Days: well-known days from the United Nations list of international days
+# (https://www.un.org/en/observances/list-days-weeks, as of 10 October 2026; each comment gives the resolution or "UN
+# list" when the list gives none), plus five fun days kept by tradition (spec 5.7). No locale, so the OS region never
+# picks it.
+$international = [ordered]@{
+    '01-24'     = 'International Day of Education'                                       # A/RES/73/25
+    '01-27'     = 'International Holocaust Remembrance Day'                              # A/RES/60/7
+    '02-11'     = 'International Day of Women and Girls in Science'                      # A/RES/70/212
+    '02-13'     = 'World Radio Day'                                                      # A/RES/67/124
+    '02-21'     = 'International Mother Language Day'                                    # A/RES/56/262
+    '03-03'     = 'World Wildlife Day'                                                   # A/RES/68/205
+    '03-08'     = 'International Women''s Day'                                           # UN list
+    '03-14'     = 'Pi Day'                                                               # tradition
+    '03-20'     = 'International Day of Happiness'                                       # A/RES/66/281
+    '03-21'     = 'World Poetry Day, International Day of Forests'                       # UNESCO: 30 C/Resolution 29; FAO: A/RES/67/200
+    '03-22'     = 'World Water Day'                                                      # A/RES/47/193
+    '04-02'     = 'World Autism Awareness Day'                                           # A/RES/62/139
+    '04-07'     = 'World Health Day'                                                     # WHO: WHA/A.2/Res.35
+    '04-12'     = 'International Day of Human Space Flight'                              # A/RES/65/271
+    '04-22'     = 'International Mother Earth Day'                                       # A/RES/63/278
+    '04-23'     = 'World Book and Copyright Day'                                         # UNESCO: 28 C/Resolution 3.18
+    '04-30'     = 'International Jazz Day'                                               # UNESCO 36 C/Resolution 39
+    '05-03'     = 'World Press Freedom Day'                                              # UNESCO 26 C/Resolution 4.3
+    '05-04'     = 'Star Wars Day'                                                        # tradition
+    '05-15'     = 'International Day of Families'                                        # A/RES/47/237
+    '05-20'     = 'World Bee Day'                                                        # FAO: A/RES/72/211
+    '05-22'     = 'International Day for Biological Diversity'                           # A/RES/55/201
+    '05-31'     = 'World No Tobacco Day'                                                 # WHO: Resolution 42.19
+    '05-Sat-2'  = 'World Migratory Bird Day'                                             # UNEP: UN list
+    '06-03'     = 'World Bicycle Day'                                                    # A/RES/72/272
+    '06-05'     = 'World Environment Day'                                                # A/RES/2994 (XXVII)
+    '06-08'     = 'World Oceans Day'                                                     # A/RES/63/111
+    '06-20'     = 'World Refugee Day'                                                    # A/RES/55/76
+    '06-21'     = 'International Day of Yoga'                                            # A/RES/69/131
+    '07-11'     = 'World Population Day'                                                 # A/RES/45/216
+    '07-17'     = 'World Emoji Day'                                                      # tradition
+    '07-18'     = 'Nelson Mandela International Day'                                     # A/RES/64/13
+    '07-20'     = 'World Chess Day'                                                      # A/RES/74/22
+    '07-30'     = 'International Day of Friendship'                                      # A/RES/65/275
+    '08-09'     = 'International Day of the World''s Indigenous Peoples'                 # A/RES/49/214
+    '08-12'     = 'International Youth Day'                                              # A/RES/54/120
+    '08-19'     = 'World Humanitarian Day'                                               # A/RES/63/139
+    '08-Fri-1'  = 'International Beer Day'                                               # tradition: the first Friday of August
+    '09-08'     = 'International Literacy Day'                                           # UNESCO: 14 C/Resolution 1.441
+    '09-15'     = 'International Day of Democracy'                                       # A/RES/62/7
+    '09-19'     = 'Talk Like a Pirate Day'                                               # tradition
+    '09-21'     = 'International Day of Peace'                                           # A/RES/36/67
+    '09-27'     = 'World Tourism Day'                                                    # UN Tourism: UN list
+    '10-01'     = 'International Coffee Day'                                             # A/RES/80/248
+    '10-02'     = 'International Day of Non-Violence'                                    # A/RES/61/271
+    '10-05'     = 'World Teachers'' Day'                                                 # UNESCO: 27 C/INF.7
+    '10-10'     = 'World Mental Health Day'                                              # WHO: UN list
+    '10-11'     = 'International Day of the Girl Child'                                  # A/RES/66/170
+    '10-16'     = 'World Food Day'                                                       # FAO: A/RES/35/70
+    '10-17'     = 'International Day for the Eradication of Poverty'                     # A/RES/47/196
+    '10-24'     = 'United Nations Day'                                                   # A/RES/168 (II)
+    '10-31'     = 'World Cities Day'                                                     # A/RES/68/239
+    '10-Sat-2'  = 'World Migratory Bird Day'                                             # UNEP: UN list
+    '11-14'     = 'World Diabetes Day'                                                   # A/RES/61/225
+    '11-19'     = 'World Toilet Day'                                                     # A/RES/67/291
+    '11-20'     = 'World Children''s Day'                                                # A/RES/836(IX)
+    '11-25'     = 'International Day for the Elimination of Violence against Women'      # A/RES/54/134
+    '12-01'     = 'World AIDS Day'                                                       # UN list
+    '12-03'     = 'International Day of Persons with Disabilities'                       # A/RES/47/3
+    '12-05'     = 'International Volunteer Day'                                          # A/RES/40/212
+    '12-10'     = 'Human Rights Day'                                                     # A/RES/423 (V)
+}
+Write-Calendar 'International' 'International Days' '' `
+    'United Nations list of international days (https://www.un.org/en/observances/list-days-weeks, as of 10 October 2026), plus fun days kept by tradition' `
+    'MIT, Copyright (c) David Pokluda (part of Anniversary; see LICENSE)' $international -Holidays
 
 # radoone/nameday-mcp: { "MM-dd": [ "Name", ... ] } -> "Name, Name"
 foreach ($c in $radooneCalendars)

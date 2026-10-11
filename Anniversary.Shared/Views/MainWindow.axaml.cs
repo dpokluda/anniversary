@@ -80,7 +80,7 @@ public partial class MainWindow : Window
         NativeItem(menuBar, "Go", "Change Date…").Click += (_, _) => ChangeDate();
         NativeItem(menuBar, "Find", "Find…").Click += (_, _) => Find();
         NativeItem(menuBar, "Find", "Find Next").Click += (_, _) => FindNext();
-        _nativeCalendarMenu = NativeItem(menuBar, "View", "Nameday Calendar").Menu!;
+        _nativeCalendarMenu = NativeItem(menuBar, "View", "Calendar").Menu!;
         _nativeThemeItems = new Dictionary<AppTheme, NativeMenuItem>
         {
             [AppTheme.System] = NativeItem(menuBar, "View", "Appearance", "System"),
@@ -382,8 +382,18 @@ public partial class MainWindow : Window
         CalendarMenu.Items.Clear();
         _nativeCalendarMenu.Items.Clear();
 
+        bool previousHasLocale = false;
         foreach (CalendarInfo calendar in _book.Calendars)
         {
+            // Calendars without a locale (e.g. International Days) come last, after a separator (spec 7.10).
+            bool hasLocale = !string.IsNullOrEmpty(calendar.Locale);
+            if (previousHasLocale && !hasLocale)
+            {
+                CalendarMenu.Items.Add(new Separator());
+                _nativeCalendarMenu.Items.Add(new NativeMenuItemSeparator());
+            }
+            previousHasLocale = hasLocale;
+
             bool isActive = string.Equals(calendar.FileName, _book.CalendarFile, StringComparison.OrdinalIgnoreCase);
             string fileName = calendar.FileName;
 

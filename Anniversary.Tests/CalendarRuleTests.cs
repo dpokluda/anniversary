@@ -217,4 +217,21 @@ public sealed class CalendarRuleTests : IDisposable
         Assert.Equal("Vendula, Velikonoční pondělí", book.GetDay(new DateOnly(2026, 4, 6)).CalendarNames);
         Assert.Equal(new DateOnly(2027, 3, 29), book.Find("Velikonoční pondělí", new DateOnly(2027, 1, 1), false, true));
     }
+
+    [Theory]
+    [InlineData(2026, 3, 14, "Pi Day")]
+    [InlineData(2026, 3, 21, "World Poetry Day, International Day of Forests")]
+    [InlineData(2026, 5, 9, "World Migratory Bird Day")]
+    [InlineData(2026, 8, 7, "International Beer Day")]
+    [InlineData(2027, 8, 6, "International Beer Day")]
+    [InlineData(2026, 10, 10, "World Mental Health Day, World Migratory Bird Day")]
+    [InlineData(2026, 10, 24, "United Nations Day")]
+    [InlineData(2026, 10, 12, "")]
+    public void InternationalCalendarHasTheseDays(int year, int month, int day, string names)
+    {
+        AnniversaryBook book = AnniversaryBook.Load("Anniversary.Calendar.International.json");
+
+        Assert.Empty(book.Warnings);
+        Assert.Equal(names, book.GetDay(new DateOnly(year, month, day)).CalendarNames);
+    }
 }

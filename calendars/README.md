@@ -14,6 +14,7 @@ identical files, on any OS (keys are sorted ordinally).
 | File | Display name | Days | Source | License |
 |---|---|---|---|---|
 | `Anniversary.Calendar.US.json` | United States | 16 dates + 14 rules | Federal holidays and observances from U.S. law, plus traditional dates (see below) | MIT (part of Anniversary) |
+| `Anniversary.Calendar.International.json` | International Days | 58 dates + 3 rules | Well-known days from the UN list of international days, plus five fun days (see below) | MIT (part of Anniversary) |
 | `Anniversary.Calendar.Czech.json` | Czechia (Česko) | 366 + 2 rules | Anniversary v4 (values unchanged; metadata added), plus Velký pátek (`easter-2`) and Velikonoční pondělí (`easter+1`) from zákon č. 245/2000 Sb., § 2 | MIT (part of Anniversary) |
 | `Anniversary.Calendar.Austrian.json` | Austria (Österreich) | 366 | [radoone/nameday-mcp](https://github.com/radoone/nameday-mcp) `at.json` @ `5d3f301` | MIT |
 | `Anniversary.Calendar.Bulgarian.json` | Bulgaria (България) | 366 | radoone/nameday-mcp `bg.json` | MIT |
@@ -45,6 +46,20 @@ Holidays are defined by law or long tradition, so there is no list to download. 
 The tests check the federal holidays of 2025–2027 against [OPM's schedules](https://www.opm.gov/policy-data-oversight/pay-leave/federal-holidays/).
 Holidays are shown on their legal date. OPM lists the weekday off instead when a holiday falls on a weekend (e.g.
 Friday 3 July 2026), and those observed days aren't listed.
+
+## The International Days calendar
+
+56 well-known days chosen from the [United Nations list of international days](https://www.un.org/en/observances/list-days-weeks)
+(239 days in October 2026, too many for the small window), each with its UN resolution in the script, or "UN list"
+where the list gives none. Names are the UN's, two of them shortened: International Holocaust Remembrance Day and
+International Volunteer Day. Every date was checked against the UN list. The list's weeks (e.g. World Space Week) and
+Vesak (a full-moon day) aren't included.
+
+Five fun days kept by tradition are added: Pi Day (14 March), Star Wars Day (4 May), World Emoji Day (17 July), Talk
+Like a Pirate Day (19 September) and International Beer Day (the first Friday of August). Commercial "national day"
+lists aren't used, because they are copyrighted.
+
+The calendar has no `locale`, so it's never the default for an OS region; choose it in the menu.
 
 ## How the sources were checked
 

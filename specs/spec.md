@@ -169,8 +169,9 @@ without names may be missing) or **rule keys** for dates that move from year to 
 - **People (`Anniversary.Data.json`): empty.** `{ "data": [] }`. No personal names or birthdates are compiled into the
   binaries. Users add people with the editor (7.8), or copy their v4 `Anniversary.Data.json` into the user app-data folder
   (or next to the executable); the lookup order (5.3) prefers that file automatically.
-- **Calendars: 11 shipped**, all in [`calendars\`](../calendars/README.md) and embedded in the app: the **US** holiday
-  calendar (`"United States"`, `"en-US"`) and 10 name-day calendars: Czech (the v4 calendar plus the two Easter
+- **Calendars: 12 shipped**, all in [`calendars\`](../calendars/README.md) and embedded in the app: the **US** holiday
+  calendar (`"United States"`, `"en-US"`), the **International Days** calendar (`"International Days"`, no locale) and
+  10 name-day calendars: Czech (the v4 calendar plus the two Easter
   holidays, Velký pátek and Velikonoční pondělí; metadata added: `"Czechia (Česko)"`, `"cs-CZ"`), Austrian, Bulgarian,
   French, Hungarian, Italian, Latvian, Polish, Russian and Slovak. The default is the calendar for the OS region (e.g.
   Czech in Czechia), otherwise the US one (5.7). Users choose another in the app (7.10), and the choice is remembered
@@ -269,7 +270,8 @@ The user-edited `appsettings.json` is never written by the app.
 - **Discovery:** the available calendars are all files named `Anniversary.Calendar.*.json` in the lookup folders (5.3),
   plus the embedded defaults. They are merged **by file name** with the same precedence as 5.3 (exe folder, then
   app-data, then embedded). So a user can add a calendar by dropping a file into the app-data folder, or override a
-  shipped one. The list is sorted by display name.
+  shipped one. The list has the calendars with a `locale` (countries) first, sorted by display name, then those without
+  one (International Days, or a user's file without metadata), also sorted by display name.
 - **Which calendar is active:** the first that applies:
   1. `UserSettings.Calendar`, if it is set and the file is still available. Choosing a calendar in the menu (7.10)
      saves it there.
@@ -287,13 +289,20 @@ The user-edited `appsettings.json` is never written by the app.
   partly tied to Easter), Swedish/Finnish (copyrighted official lists), and Lithuanian/Estonian/Danish/German/Spanish
   (no verified open source yet). To add a country, extend the script with a pinned source plus its license and
   validation. Name days are **never** typed in or made up by hand.
-- **Holiday calendars** (so far the US one) list days defined by law or by long tradition, so there is no list to
-  download. Their entries are written in `Build-Calendars.ps1`, each with its source: federal holidays from
-  5 U.S.C. 6103(a), observances designated in 36 U.S.C. (Mother's Day, Father's Day, Flag Day, Patriot Day), the
-  daylight saving time dates from 15 U.S.C. 260a, and traditional dates. Floating dates use rule keys (5.1). Tests check
-  the federal holidays against OPM's published schedules (9). Observed days off (e.g. Friday 3 July 2026 when 4 July is
-  a Saturday) aren't listed. The script also adds the two Czech public holidays that move with Easter, `easter-2` Velký
-  pátek and `easter+1` Velikonoční pondělí (Act No. 245/2000 Coll., § 2), to the Czech calendar.
+- **Holiday calendars** (US and International Days) list days defined by law, by the UN or by long tradition, so there
+  is no list to download. Their entries are written in `Build-Calendars.ps1`, each with its source. Floating dates use
+  rule keys (5.1).
+  - **US:** federal holidays from 5 U.S.C. 6103(a), observances designated in 36 U.S.C. (Mother's Day, Father's Day,
+    Flag Day, Patriot Day), the daylight saving time dates from 15 U.S.C. 260a, and traditional dates. Tests check the
+    federal holidays against OPM's published schedules (9). Observed days off (e.g. Friday 3 July 2026 when 4 July is a
+    Saturday) aren't listed.
+  - **International Days:** 56 well-known days chosen from the United Nations list of international days (each with
+    its UN resolution, or "UN list" where the list gives none; checked against the list as of 10 October 2026), plus
+    five fun days kept by tradition: Pi Day, Star Wars Day, World Emoji Day, Talk Like a Pirate Day and International
+    Beer Day (the first Friday of August). Names are the UN's, two of them shortened (International Holocaust
+    Remembrance Day, International Volunteer Day). It has no `locale`, so the OS region never picks it (step 3 above).
+  - The script also adds the two Czech public holidays that move with Easter, `easter-2` Velký pátek and `easter+1`
+    Velikonoční pondělí (Act No. 245/2000 Coll., § 2), to the Czech calendar.
 - **License notice:** `calendars\THIRD-PARTY-NOTICES.md` must ship with the app (copied next to the executable on
   publish, see 10) because the MIT license requires it.
 
@@ -356,7 +365,7 @@ public void OpenDataFile(string path);                          // reads the fil
 **Calendar support** (for 5.7 / 7.10), also on `AnniversaryBook` (`Load` keeps the folders for later use):
 
 ```csharp
-public IReadOnlyList<CalendarInfo> Calendars { get; }           // discovered per 5.7, sorted by display name
+public IReadOnlyList<CalendarInfo> Calendars { get; }           // discovered and sorted per 5.7
 public string CalendarFile { get; }                             // file name of the active calendar
 public void UseCalendar(string fileName);                       // clears Warnings, loads the calendar (5.3 lookup, 5.4 warnings) and replaces it
 public string AppDataFolder { get; }                            // the user app-data folder passed to Load (last folder); used by 5.6
@@ -536,7 +545,7 @@ their main menu there, and Android puts ⋮ there. macOS apps use the menu bar i
 | Edit People… (7.8) | opens the people editor | none |
 | Data File ▸ Open… / Save As… / Show in Folder (7.11) | uses another data file, saves the people to a new one, or opens the data file's folder | `Ctrl+O` / `Ctrl+Shift+S` (macOS: `⌘O` / `⇧⌘S`) on Open… / Save As… |
 | *separator* | | |
-| Nameday Calendar ▸ {calendars} | radio items, one per discovered calendar (display name), the active one checked; switches and saves it (7.10) | none |
+| Calendar ▸ {calendars} | radio items, one per discovered calendar (display name), the active one checked, calendars without a locale after a separator; switches and saves it (7.10) | none |
 | Theme ▸ System / Light / Dark | radio items (`ToggleType="Radio"`, the current one is checked); applies the theme immediately and saves it (7.7) | none |
 | *separator* | | |
 | About Anniversary… | opens About | none |
@@ -556,7 +565,7 @@ Native menu items have no routed `Click` event and get no generated fields in Av
 header and wires their `Click` in code.
 
 - **File**: Edit People…; *separator*; Open Data File… (⌘O), Save Data File As… (⇧⌘S), Show Data File in Finder (7.11)
-- **View**: Nameday Calendar ▸ {calendars}; Appearance ▸ System / Light / Dark (radio items, same behaviour as the ⋯ submenus)
+- **View**: Calendar ▸ {calendars}; Appearance ▸ System / Light / Dark (radio items, same behaviour as the ⋯ submenus)
 - **Go**: Yesterday, Tomorrow, Today, Change Date…
 - **Find**: Find… (⌘F), Find Next (⌘G)
 - Quit (⌘Q) and the app menu come from Avalonia/macOS automatically. **About Anniversary** is in the app menu (7.1).
@@ -680,14 +689,16 @@ header and wires their `Click` in code.
 - **OK** (`accent`; disabled while anything is invalid) writes the result back to the person in the editor's copy and
   updates the row summary. **Cancel** discards.
 
-### 7.10 Nameday Calendar menu
+### 7.10 Calendar menu
 
-([mock](screens/main-window-calendar-menu.light.preview.png))
+([mock](screens/main-window-calendar-menu.light.preview.png); it still shows the old name *Nameday Calendar*)
 
-- **⋯ ▸ Nameday Calendar ▸** lists the calendars from `AnniversaryBook.Calendars` as radio items (display name), with
-  the active one checked. The same list appears under **View ▸ Nameday Calendar** on macOS. The 11 shipped calendars
-  (the US holiday calendar and 10 name-day calendars) appear by default, plus any user-supplied calendar files. The menu
-  keeps the name *Nameday Calendar* although the US calendar lists holidays (user decision).
+- **⋯ ▸ Calendar ▸** lists the calendars from `AnniversaryBook.Calendars` as radio items (display name), with
+  the active one checked. The same list appears under **View ▸ Calendar** on macOS. The 12 shipped calendars
+  (the US and International Days calendars and 10 name-day calendars) appear by default, plus any user-supplied
+  calendar files. The calendars with a `locale` (countries) come first; a separator (`Separator`, on macOS
+  `NativeMenuItemSeparator`) precedes the ones without (International Days), in the order of 5.7. The menu was called
+  *Nameday Calendar* until the US and International Days calendars arrived; the user renamed it.
 - Choosing one calls `AnniversaryBook.UseCalendar(fileName)`, refreshes the main window, saves `UserSettings.Calendar`,
   and shows any new warnings (5.4).
 - The submenu is rebuilt each time the menu opens, so a calendar file added while the app runs appears without a restart.
@@ -758,9 +769,10 @@ on a cloud drive (OneDrive, iCloud Drive, Dropbox, …) and uses it from several
     `From`/`ToPerson` round-trips a person (birthday `DateOnly` ↔ `DateTime?`, empty nameday → `null`); a list of
     `AnniversaryRow`s with a duplicate date is reported invalid; `NamedayDate` keeps only month and day (and uses a
     leap year for 29 February); `MonthDayPattern` removes the year from short date patterns of several cultures.
-  - **CalendarTests**: discovers `Anniversary.Calendar.*.json` across folders plus the 11 embedded calendars; the exe
+  - **CalendarTests**: discovers `Anniversary.Calendar.*.json` across folders plus the 12 embedded calendars; the exe
     folder wins over app-data, which wins over embedded, for the same file name; the display name comes from `name`, or
-    from the file name if `name` is missing; a v4-style file without metadata loads; the preferred calendar is used when
+    from the file name if `name` is missing; a v4-style file without metadata loads; the list has the calendars with a
+    locale first by display name, then those without (International Days, a user's file); the preferred calendar is used when
     available, otherwise `calendarFile`; with neither, the calendar for the culture's region (`cs-CZ` and `en-CZ` →
     Czech, `sk-SK` → Slovak, `de-AT` → Austrian), otherwise US (`en-US`, `en-GB`, `de-DE`, the neutral `cs` and the
     invariant culture); `UseCalendar` changes `GetDay(...).CalendarNames` and `Find` results without
@@ -772,8 +784,9 @@ on a cloud drive (OneDrive, iCloud Drive, Dropbox, …) and uses it from several
     finds a rule date in the following year; unknown keys give one warning (at most 5 keys listed) and the other
     entries still work; rules at the ends of `DateOnly`'s range don't fail. The shipped calendars: the US one has the
     federal holidays of 2025–2027 on the dates in OPM's schedules (fixed-date holidays on their legal date, because OPM
-    lists the weekday off when one falls on a weekend) and its floating observances in 2026, and the Czech one has Velký
-    pátek and Velikonoční pondělí in 2026.
+    lists the weekday off when one falls on a weekend) and its floating observances in 2026, the Czech one has Velký
+    pátek and Velikonoční pondělí in 2026, and International Days has its sample days (two names on one day, the second
+    Saturday of May and October, the first Friday of August in two years, a day without entries).
   - **DataFileTests**: a chosen data file wins over `dataFile` from the config and is the save target; a missing chosen
     file gives the 5.4 warning, no people, `DataFileLoadFailed` and keeps its path, and is loaded once it appears; a
     file that can't be read keeps its path and sets `DataFileLoadFailed`; a file changed elsewhere is detected and
@@ -818,12 +831,13 @@ above on its own OS and attaches the result to the run as one file, `Anniversary
 | C12 | New **Theme ▸ System / Light / Dark** choice (in the ⋯/right-click menu and in the macOS View menu), remembered between runs. "System" follows OS changes live. | User request. |
 | C13 | The built-in people data is empty (5.1); real data comes from the editor, app-data, or next to the exe. | No personal data inside published binaries. |
 | C14 | New **Edit People…** editor (7.8) and **Anniversaries** dialog (7.9) that save the data file. | User request. |
-| C15 | New **Nameday Calendar** choice (7.10). Calendars are discovered as files (5.7) and the choice is remembered. Calendar files may carry `name`/`locale`/`source`/`license` metadata. | User request; prepares for more countries. |
+| C15 | New **Calendar** choice (7.10; first called Nameday Calendar). Calendars are discovered as files (5.7) and the choice is remembered. Calendar files may carry `name`/`locale`/`source`/`license` metadata. | User request; prepares for more countries. |
 | C16 | Years aren't shown when the date's year is after the displayed day (6.1); v4 printed negative years for the `9999` "unknown year" placeholder. | Found while testing with the real v4 data. |
 | C17 | Refreshed app icon: the same tear-off calendar (yellow binding, red "24", blue lines), redrawn in full colour at 16–256 px (Windows) and up to 1024 px (macOS `.icns`). The v4 icon was 16-colour at 16 and 32 px only. | Sharp on high-DPI and Retina screens. |
 | C18 | Open source under the MIT License (`LICENSE`) instead of freeware: the About dialog and the assembly copyright say *"Copyright © 1997-{year} David Pokluda"*, the About dialog adds *"MIT License"*. | Published in its own public repository. |
 | C19 | Calendar files may use **rule keys** for dates that move from year to year (5.1, 6.3). A new **US** holiday calendar (federal holidays and well-known observances) ships. The default calendar follows the **OS region** (e.g. Czech in Czechia) and is US where no calendar matches; v4 always used Czech. The Czech calendar adds Velký pátek and Velikonoční pondělí. Unknown calendar keys are reported (5.4). | User request: a calendar for countries without name days, starting with the US, and a sensible default for everyone. |
 | C20 | New **Data File ▸ Open… / Save As… / Show in Folder** (7.11). The chosen file is remembered per computer, reloaded when it changes elsewhere, and the editor asks before overwriting changes made elsewhere or saving over a file that couldn't be loaded (7.8). | User request: share the data file with family, and use one file from several computers through a cloud drive. |
+| C21 | New **International Days** calendar: 56 well-known UN international days plus five fun days such as International Beer Day (5.7). | User request: something to show where there are no name days. |
 
 ## 12. Acceptance criteria
 
@@ -852,7 +866,7 @@ above on its own OS and attaches the result to the run as one file, `Anniversary
     - Invalid namedays, blank names and duplicate anniversary dates disable Save/OK.
     - Cancel discards all changes.
 11. Copying a second calendar file (e.g. a test `Anniversary.Calendar.Test.json` with `"name": "Test"`) into the
-    app-data folder makes it appear in **Nameday Calendar**. Choosing it changes the calendar names in the main window
+    app-data folder makes it appear in **Calendar**. Choosing it changes the calendar names in the main window
     immediately, and the choice survives a restart. Removing the file falls back to the default (5.7) without errors.
 12. On a fresh install with the OS region set to the United States (or to a region without its own calendar), the US
     calendar is active: 26 November 2026 shows *Thanksgiving* and 27 November *Black Friday*, 5 April 2026 shows
