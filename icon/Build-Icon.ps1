@@ -10,7 +10,7 @@
     Outputs:
       ..\Anniversary.Shared\Assets\App.ico   Windows: 16, 20, 24, 32, 40, 48, 64, 256 px (32-bit, 256 px PNG-compressed)
       ..\Anniversary.Shared\Assets\App.png   256 px, used by the About dialog
-      App.icns                               macOS: 16-1024 px incl. @2x (for a future .app bundle)
+      App.icns                               macOS .app: the calendar on a white rounded square, 16-1024 px incl. @2x
       App-1024.png                           master image (Linux, store listings)
 
     Requires Windows (System.Drawing / GDI+). Re-run after changing the drawing code.
@@ -207,6 +207,45 @@ function New-Icon([int] $size)
     return $bitmap
 }
 
+function New-MacIcon([int] $size)
+{
+    # macOS 26 and later put an icon that isn't a rounded square on a grey tile, so the macOS icon brings its own white
+    # one, on Apple's grid: 824 px with 185 px corners, 100 px in from each edge of 1024.
+    $bitmap = [System.Drawing.Bitmap]::new($size, $size, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $g = [System.Drawing.Graphics]::FromImage($bitmap)
+    $g.SmoothingMode = 'AntiAlias'
+    $g.PixelOffsetMode = 'HighQuality'
+    $g.CompositingQuality = 'HighQuality'
+    $g.Clear([System.Drawing.Color]::Transparent)
+
+    $k = $size / 1024.0
+    $g.ScaleTransform($k, $k)
+    foreach ($i in 1..4)
+    {
+        $g.FillPath([System.Drawing.SolidBrush]::new((Rgb 0 0 0 12)), (New-RoundedRect 100 (100 + 4 * $i) 824 824 185))
+    }
+    $tile = New-RoundedRect 100 100 824 824 185
+    $g.FillPath((New-VerticalGradient 100 924 (Rgb 255 255 255) (Rgb 0xEE 0xF0 0xF4)), $tile)
+    $g.ResetTransform()
+
+    # The calendar is drawn at its own size, so it keeps that size's details, at 82% of the icon (the small layout's
+    # page fills more of its square, so it's drawn smaller to match). An even size keeps it on whole pixels. Row 132.5
+    # of its 256 grid goes to the middle: a little below the middle of its outline, as the thin rings weigh little.
+    $inner = 2 * [Math]::Round($size * 0.82 / 2)
+    if ($inner -le 24)
+    {
+        $inner = 2 * [Math]::Round($inner * 196 / 240 / 2)
+    }
+    $x = ($size - $inner) / 2
+    $y = [Math]::Round($size / 2 - $inner * 132.5 / 256)
+    $calendar = New-Icon $inner
+    $g.InterpolationMode = 'NearestNeighbor'
+    $g.DrawImage($calendar, [System.Drawing.Rectangle]::new($x, $y, $inner, $inner))
+    $calendar.Dispose()
+    $g.Dispose()
+    return $bitmap
+}
+
 function Get-PngBytes([System.Drawing.Bitmap] $bitmap)
 {
     $stream = [System.IO.MemoryStream]::new()
@@ -273,7 +312,7 @@ function Write-Icns([string] $path)
     $body = [System.IO.MemoryStream]::new()
     foreach ($type in $entries.Keys)
     {
-        $bitmap = New-Icon $entries[$type]
+        $bitmap = New-MacIcon $entries[$type]
         $png = Get-PngBytes $bitmap
         $bitmap.Dispose()
         $typeBytes = [System.Text.Encoding]::ASCII.GetBytes($type); $body.Write($typeBytes, 0, 4)
@@ -299,6 +338,12 @@ if ($PreviewFolder)
     {
         $bitmap = New-Icon $s
         $bitmap.Save((Join-Path $PreviewFolder "App-$s.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+        $bitmap.Dispose()
+    }
+    foreach ($s in 16, 32, 64, 128, 256, 512)
+    {
+        $bitmap = New-MacIcon $s
+        $bitmap.Save((Join-Path $PreviewFolder "App-mac-$s.png"), [System.Drawing.Imaging.ImageFormat]::Png)
         $bitmap.Dispose()
     }
 }
