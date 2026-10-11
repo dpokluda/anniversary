@@ -191,7 +191,10 @@ Ported from v4 with XML docs:
 
 ### 5.3 File lookup order
 
-`AnniversaryBook.Load(string? preferredCalendar, params string[] folders)` resolves **each file independently** (config, calendar, data). The calendar is chosen per 5.7:
+`AnniversaryBook.Load(…)` resolves **each file independently** (config, calendar, data). The calendar is chosen per
+5.7. A **data file chosen in the app** (`UserSettings.DataFile`, 5.5, set by Data File ▸ Open… or Save As…, 7.11) wins
+over `dataFile` from the config; it is a full path and is used as is, even when it's missing (5.4). Configured names
+are found like this:
 
 1. If the configured name is an **absolute path**, use it (and nothing else).
 2. Otherwise, try `Path.Combine(folder, name)` for each folder **in order**. The first existing file wins.
@@ -220,21 +223,24 @@ each warning in a message dialog (title **"Data Error"**, or **"Configuration Er
 | Calendar not found | `Calendar file not found: {name}` | empty calendar |
 | Calendar invalid JSON | `Error loading calendar: {message}` | empty calendar |
 | Calendar keys that are neither `MM-dd` nor a rule (5.1) | `Unknown dates in {name}: {key}, {key}` (at most 5 keys, then `and {n} more`) | those entries are ignored |
-| Data not found | `Data file not found: {name}` | no people |
-| Data invalid JSON | `Error loading data: {message}` | no people |
+| Data not found | `Data file not found: {name}` | no people. A chosen or absolute path is kept: the file is used as soon as it appears (7.11), and the editor asks before creating it (7.8) |
+| Data invalid JSON | `Error loading data: {message}` | no people; the editor asks before replacing the file (7.8) |
 
-### 5.5 User settings (theme and calendar)
+### 5.5 User settings (theme, calendar and data file)
 
-The app remembers the user's preferences, the **theme** and the **name-day calendar**, in a small file that **only the app writes**:
+The app remembers the user's preferences, the **theme**, the **name-day calendar** and the **data file** chosen in the
+app, in a small file that **only the app writes**:
 `{user app-data folder}/usersettings.json`, in the same folder as 5.3 step 2 (e.g. `%APPDATA%\Anniversary\usersettings.json`).
 The user-edited `appsettings.json` is never written by the app.
 
 ```json
-{ "theme": "System", "calendar": "Anniversary.Calendar.Czech.json" }
+{ "theme": "System", "calendar": "Anniversary.Calendar.Czech.json", "dataFile": "C:\\Users\\Jan\\OneDrive\\Anniversary.Data.json" }
 ```
 
 - `Model\UserSettings.cs`: `UserSettings` has `AppTheme Theme` (default `System`), `string? Calendar` (calendar file
-  name; `null` = not chosen yet) and a `[JsonIgnore] string FilePath`.
+  name; `null` = not chosen yet), `string? DataFile` (full path of the data file chosen with Open… or Save As…, 7.11;
+  `null` = use `dataFile` from the config) and a `[JsonIgnore] string FilePath`. Each computer has its own settings, so
+  a shared data file can have a different path on each one (e.g. on Windows and on macOS).
   `public static UserSettings Load(string filePath)` returns defaults (with `FilePath` set) if the file is missing or
   invalid, without warnings, because the file is app-written. `public void Save()` creates the folder if needed and writes
   the file. If saving fails (`IOException` or `UnauthorizedAccessException`), it is ignored: the chosen theme and
@@ -243,7 +249,8 @@ The user-edited `appsettings.json` is never written by the app.
 
 ### 5.6 Saving the people file (used by the editor in 7.8)
 
-- **Target path:** the file the people were loaded from (`AnniversaryBook.DataFilePath`). If they came from the embedded
+- **Target path:** the data file in use (`AnniversaryBook.DataFilePath`): the file the people were loaded from, or the
+  chosen or absolute file even when it was missing or couldn't be read (5.4). If the people came from the embedded
   default (`DataFilePath == null`), the target is `{user app-data folder}/{Config.DataFile}`, and the folder is created
   if needed. An absolute `dataFile` path in the config is written in place.
 - **Format:** the same as 5.1. `{ "data": [ … ] }` with camelCase property names, indented, UTF-8, Czech letters
@@ -251,6 +258,9 @@ The user-edited `appsettings.json` is never written by the app.
   and anniversaries ordered by date. People are written **in list order**, which is the display order (6.1); sorting the
   grid in the editor doesn't reorder the file.
 - **Write safely:** write to `{target}.tmp`, then replace the target, so a failure never leaves a half-written file.
+- **Change tracking:** after loading or saving, the book remembers the file's last-write time and size.
+  `HasDataFileChanged()` is true when the file exists and either differs, i.e. it was changed elsewhere (for example on
+  another computer through a cloud drive) or it appeared after being missing. A file that is gone isn't a change.
 - **Errors** (`IOException`, `UnauthorizedAccessException`, e.g. a read-only folder next to the exe) propagate to the
   editor, which shows *"Could not save the data file: {message}"* (title "Edit People") and stays open.
 
@@ -323,10 +333,24 @@ on the current time and passing the date in keeps the logic simple to test.
 
 ```csharp
 public IReadOnlyList<Person> People { get; }                    // in data-file order
-public string? DataFilePath { get; }                            // null when loaded from the embedded default
+public string? DataFilePath { get; }                            // the data file in use (5.6); null for the embedded default
 public string SavePathFor();                                    // 5.6 target path rule (uses DataFilePath or AppDataFolder)
 public void SavePeople(IReadOnlyList<Person> people, string path); // writes per 5.6, then replaces People and rebuilds the index
 public static bool IsValidNameday(string? value);               // null/empty, or "MM-dd" valid in a leap year (allows 02-29)
+```
+
+**Data file support** (for 5.3–5.6 and 7.11), also on `AnniversaryBook`:
+
+```csharp
+public static AnniversaryBook Load(string? preferredCalendar, string? preferredDataFile, IReadOnlyList<string> folders);
+                                                                // 5.3; the params overload passes no data file
+public bool DataFileLoadFailed { get; }                         // the data file wasn't found or couldn't be read (5.4)
+public bool HasDataFileChanged();                               // 5.6 change tracking
+public bool ReloadPeopleIfChanged();                            // if HasDataFileChanged(): clears Warnings, reloads the people
+                                                                // (5.4 warnings) and returns true
+public void OpenDataFile(string path);                          // reads the file and uses it where it is (7.11); throws
+                                                                // JsonException/IOException/… and changes nothing if it can't
+                                                                // be read or has no "data" list
 ```
 
 **Calendar support** (for 5.7 / 7.10), also on `AnniversaryBook` (`Load` keeps the folders for later use):
@@ -510,6 +534,7 @@ their main menu there, and Android puts ⋮ there. macOS apps use the menu bar i
 | Find Next | Find Next | `F3` (macOS: `⌘G`) |
 | *separator* | | |
 | Edit People… (7.8) | opens the people editor | none |
+| Data File ▸ Open… / Save As… / Show in Folder (7.11) | uses another data file, saves the people to a new one, or opens the data file's folder | `Ctrl+O` / `Ctrl+Shift+S` (macOS: `⌘O` / `⇧⌘S`) on Open… / Save As… |
 | *separator* | | |
 | Nameday Calendar ▸ {calendars} | radio items, one per discovered calendar (display name), the active one checked; switches and saves it (7.10) | none |
 | Theme ▸ System / Light / Dark | radio items (`ToggleType="Radio"`, the current one is checked); applies the theme immediately and saves it (7.7) | none |
@@ -522,13 +547,15 @@ their main menu there, and Android puts ⋮ there. macOS apps use the menu bar i
 |---|---|
 | Ctrl+F (Windows/Linux), ⌘F (macOS) | Find… |
 | F3 (all), ⌘G (macOS) | Find Next |
+| Ctrl+O (Windows/Linux), ⌘O (macOS) | Data File ▸ Open… |
+| Ctrl+Shift+S (Windows/Linux), ⇧⌘S (macOS) | Data File ▸ Save As… |
 
 #### macOS menu bar (`NativeMenu` on the main window; Windows and Linux ignore it)
 
 Native menu items have no routed `Click` event and get no generated fields in Avalonia 12, so `MainWindow` finds them by
 header and wires their `Click` in code.
 
-- **File**: Edit People…
+- **File**: Edit People…; *separator*; Open Data File… (⌘O), Save Data File As… (⇧⌘S), Show Data File in Finder (7.11)
 - **View**: Nameday Calendar ▸ {calendars}; Appearance ▸ System / Light / Dark (radio items, same behaviour as the ⋯ submenus)
 - **Go**: Yesterday, Tomorrow, Today, Change Date…
 - **Find**: Find… (⌘F), Find Next (⌘G)
@@ -578,6 +605,9 @@ header and wires their `Click` in code.
 - Static helper `Task Show(Window owner, string title, string message)`. It builds a small modal window in code
   (no XAML needed): wrapped message text, min width 240, margin 16; an **OK** button (`accent`, default and cancel)
   aligned right. It replaces `MessageBox.Show`.
+- `Task<bool> Confirm(Window owner, string title, string message, string confirmText)` builds the same window with two
+  buttons aligned right: **{confirmText}** and **Cancel** (`accent`, default and cancel, so Enter and Esc are the safe
+  choice). Returns `true` only for {confirmText}.
 
 ### 7.7 Theme switching
 
@@ -629,8 +659,15 @@ header and wires their `Click` in code.
   file order (5.6).
 - **Footer:** left, muted: `"{count} people · {target path}"` (the path from 5.6); right: **Save** (`accent`) and
   **Cancel** (`IsCancel`). Save isn't `IsDefault`, because Enter commits a cell edit in the grid.
-- **Save:** `AnniversaryBook.SavePeople(copy, path)`. On success, close and refresh the main window. On error, show the
-  message from 5.6 and stay open. **Cancel** closes without saving (no confirmation).
+- **Save:** first check the file (5.6):
+  - if `HasDataFileChanged()`, ask (`MessageDialog.Confirm`, title "Edit People", button **Overwrite**): *"The data
+    file was changed elsewhere, for example on another computer, after it was loaded: {path}. Saving replaces those
+    changes with yours."*
+  - otherwise, if `DataFileLoadFailed`, ask (button **Save Anyway**): *"The data file couldn't be loaded, so its people
+    aren't in this list: {path}. If it's on a cloud drive that hasn't finished syncing, cancel and try again later."*
+
+  Cancel keeps the editor open. Then `AnniversaryBook.SavePeople(copy, path)`. On success, close and refresh the main
+  window. On error, show the message from 5.6 and stay open. **Cancel** closes without saving (no confirmation).
 
 ### 7.9 Anniversaries dialog (`Views\AnniversariesDialog`)
 
@@ -655,13 +692,38 @@ header and wires their `Click` in code.
   and shows any new warnings (5.4).
 - The submenu is rebuilt each time the menu opens, so a calendar file added while the app runs appears without a restart.
 
+### 7.11 Data File menu (sharing the people)
+
+Two uses: a family member gets your data file and opens it in their copy of the app; and one person keeps the file
+on a cloud drive (OneDrive, iCloud Drive, Dropbox, …) and uses it from several computers. The file is always used
+**where it is**, never copied. The choice is remembered per computer in `UserSettings.DataFile` (5.5).
+
+- **⋯ ▸ Data File ▸ Open…** (macOS: **File ▸ Open Data File…**): the native open picker
+  (`StorageProvider.OpenFilePickerAsync`, title "Open Data File", filter *Anniversary data (\*.json)* plus all files).
+  `AnniversaryBook.OpenDataFile(path)`, then save `UserSettings.DataFile` and refresh the main window. If the file
+  can't be read, or it isn't a data file (no `data` list, e.g. a calendar), show *"Could not open the data file:
+  {message}"* (title "Open Data File") and change nothing.
+- **Save As…** (macOS: **Save Data File As…**): the native save picker (title "Save Data File As", suggested name: the
+  current file's name, `.json`, the OS asks before replacing a file). `SavePeople(People, path)`, then save
+  `UserSettings.DataFile`, so the app uses the new file from then on, for example after moving it to a cloud drive.
+  Errors as in 5.6 (title "Save Data File As").
+- **Show in Folder** (macOS: **Show Data File in Finder**): opens the folder of the data file (`SavePathFor()`) in the
+  file manager (`Launcher.LaunchDirectoryInfoAsync`), for example to attach the file to an email or back it up. If
+  that folder doesn't exist yet, say so instead (title "Data File").
+- **Changes from elsewhere:** when the main window is activated, and before Edit People opens, call
+  `ReloadPeopleIfChanged()`; if it reloads, refresh the main window and show its warnings. So an edit saved on another
+  computer appears once the cloud app has synced the file, and a missing file is picked up as soon as it appears.
+- The app doesn't merge: if two computers edit the file while offline, the cloud app may keep a "conflicted copy",
+  which the user resolves. Opening a data file by double-clicking it needs installers and a file extension of its
+  own (`specs/plan.md`).
+
 ## 8. Application start-up
 
 - `Anniversary.Desktop\Program.cs`: `[STAThread] Main` → `BuildAvaloniaApp().StartWithClassicDesktopLifetime(args)`.
   `BuildAvaloniaApp()` must be `public static`, because the XAML previewer needs it: `AppBuilder.Configure<App>().UsePlatformDetect().LogToTrace()`.
 - `App.OnFrameworkInitializationCompleted`: for `IClassicDesktopStyleApplicationLifetime`, build the folder list (5.3),
   load `UserSettings` from the app-data folder (5.5) and apply its theme **before** creating the main window (so it opens
-  without a flash of the wrong theme), call `AnniversaryBook.Load(settings.Calendar, folders…)`, and set
+  without a flash of the wrong theme), call `AnniversaryBook.Load(settings.Calendar, settings.DataFile, folders)`, and set
   `MainWindow = new MainWindow(book, DateOnly.FromDateTime(DateTime.Today), settings)`.
   Phase 1 does not handle the single-view (mobile) lifetime.
 - Views also have a parameterless constructor so the XAML previewer can create them.
@@ -712,6 +774,12 @@ header and wires their `Click` in code.
     federal holidays of 2025–2027 on the dates in OPM's schedules (fixed-date holidays on their legal date, because OPM
     lists the weekday off when one falls on a weekend) and its floating observances in 2026, and the Czech one has Velký
     pátek and Velikonoční pondělí in 2026.
+  - **DataFileTests**: a chosen data file wins over `dataFile` from the config and is the save target; a missing chosen
+    file gives the 5.4 warning, no people, `DataFileLoadFailed` and keeps its path, and is loaded once it appears; a
+    file that can't be read keeps its path and sets `DataFileLoadFailed`; a file changed elsewhere is detected and
+    reloaded (with old warnings cleared); saving isn't a change; a deleted file isn't a change; `OpenDataFile` uses the
+    file where it is and rejects invalid JSON, a missing file and a calendar file without changing anything; saving to a
+    new path (Save As) makes it the data file; `UserSettings` round-trips `DataFile`.
 
 ## 10. Build, run and publish
 
@@ -755,6 +823,7 @@ above on its own OS and attaches the result to the run as one file, `Anniversary
 | C17 | Refreshed app icon: the same tear-off calendar (yellow binding, red "24", blue lines), redrawn in full colour at 16–256 px (Windows) and up to 1024 px (macOS `.icns`). The v4 icon was 16-colour at 16 and 32 px only. | Sharp on high-DPI and Retina screens. |
 | C18 | Open source under the MIT License (`LICENSE`) instead of freeware: the About dialog and the assembly copyright say *"Copyright © 1997-{year} David Pokluda"*, the About dialog adds *"MIT License"*. | Published in its own public repository. |
 | C19 | Calendar files may use **rule keys** for dates that move from year to year (5.1, 6.3). A new **US** holiday calendar (federal holidays and well-known observances) ships. The default calendar follows the **OS region** (e.g. Czech in Czechia) and is US where no calendar matches; v4 always used Czech. The Czech calendar adds Velký pátek and Velikonoční pondělí. Unknown calendar keys are reported (5.4). | User request: a calendar for countries without name days, starting with the US, and a sensible default for everyone. |
+| C20 | New **Data File ▸ Open… / Save As… / Show in Folder** (7.11). The chosen file is remembered per computer, reloaded when it changes elsewhere, and the editor asks before overwriting changes made elsewhere or saving over a file that couldn't be loaded (7.8). | User request: share the data file with family, and use one file from several computers through a cloud drive. |
 
 ## 12. Acceptance criteria
 
@@ -789,6 +858,12 @@ above on its own OS and attaches the result to the run as one file, `Anniversary
     calendar is active: 26 November 2026 shows *Thanksgiving* and 27 November *Black Friday*, 5 April 2026 shows
     *Easter*, and Next 7 days on 20 November 2026 lists Thanksgiving. With the region set to Czechia, or with Czech
     chosen, 6 April 2026 shows *Vendula, Velikonoční pondělí*.
+13. **Family copy:** in a fresh install, Data File ▸ Open… on a data file someone sent shows their people at once and
+    after a restart; edits are saved into that file.
+14. **Several computers:** after Save As… into a cloud-drive folder on one computer and Open… of that file on another,
+    a person added on one appears on the other when its window is next activated (once the cloud app has synced).
+    Saving on a computer whose copy changed meanwhile asks before overwriting. If the file is missing at start-up,
+    the warning names it, and the editor asks before creating it.
 
 ## 13. Implementation order
 

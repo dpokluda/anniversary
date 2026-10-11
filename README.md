@@ -62,7 +62,8 @@ xattr -d com.apple.quarantine Anniversary   # only if it was downloaded (Gatekee
 ./Anniversary
 ```
 
-On macOS the commands are also in the menu bar: **File** (Edit People…), **View** (Nameday Calendar, Appearance),
+On macOS the commands are also in the menu bar: **File** (Edit People…, Open Data File… ⌘O, Save Data File As… ⇧⌘S,
+Show Data File in Finder), **View** (Nameday Calendar, Appearance),
 **Go** (Yesterday, Tomorrow, Today, Change Date…), **Find** (Find… ⌘F, Find Next ⌘G), and **About Anniversary** in the
 app menu.
 
@@ -93,15 +94,29 @@ for each file in this order, and the first one found wins:
 
 | File | What it is | Written by the app? |
 |---|---|---|
-| `Anniversary.Data.json` | the people (edit them with **⋯ ▸ Edit People…**) | yes, when you save in the editor |
+| `Anniversary.Data.json` | the people (edit them with **⋯ ▸ Edit People…**); any file chosen with **⋯ ▸ Data File ▸ Open…** works too | yes, when you save in the editor |
 | `appsettings.json` | configuration (`calendarFile`, `dataFile`, `displayYearsOnBirthdays`, `numberOfDaysAhead`) | never |
-| `usersettings.json` | the chosen theme and calendar | yes |
+| `usersettings.json` | the chosen theme, calendar and data file | yes |
 | `Anniversary.Calendar.*.json` | extra or replacement calendars | never |
 
-**Moving from v4:** copy your `Anniversary.Data.json` (and `appsettings.json`, if you changed it) from the v4 folder into
-the app-data folder above. The format is unchanged. A birth year of `9999` still means "year unknown". If your OS
-region isn't Czechia, choose **Czechia (Česko)** in the calendar menu once (a copied v4 `appsettings.json` already
-selects it).
+### Sharing your data
+
+**With family:** send them your data file. **⋯ ▸ Data File ▸ Show in Folder** (macOS: **File ▸ Show Data File in
+Finder**) opens the folder it's in, so you can attach it to an email. They save it somewhere permanent, such as
+Documents, and choose **⋯ ▸ Data File ▸ Open…** (macOS: **File ▸ Open Data File…**, ⌘O). The app uses the file where
+it is, saves changes into it, and remembers it.
+
+**On several computers:** on the first one, choose **⋯ ▸ Data File ▸ Save As…** (⇧⌘S on macOS) and save into a
+cloud-drive folder (OneDrive, iCloud Drive, Dropbox, …). On each other computer, choose **Open…** and pick that file.
+A change saved on one computer appears on the others the next time their app window becomes active, once the cloud
+app has synced it. If the file was changed elsewhere while you were editing, the editor asks before overwriting it. If
+the file is missing when the app starts (for example, not synced yet), the app says so and keeps waiting for it, and
+the editor asks before creating a new one. Each computer remembers its own path to the file.
+
+**Moving from v4:** open your v4 `Anniversary.Data.json` with **⋯ ▸ Data File ▸ Open…**, or copy it (and
+`appsettings.json`, if you changed it) from the v4 folder into the app-data folder above. The format is unchanged. A
+birth year of `9999` still means "year unknown". If your OS region isn't Czechia, choose **Czechia (Česko)** in the
+calendar menu once (a copied v4 `appsettings.json` already selects it).
 
 ## Calendars
 

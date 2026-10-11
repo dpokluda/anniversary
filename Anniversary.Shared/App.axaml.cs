@@ -146,7 +146,7 @@ public partial class App : Application
             UserSettings settings = UserSettings.Load(Path.Combine(appData, UserSettingsFileName));
             ApplyTheme(settings.Theme);
 
-            AnniversaryBook book = AnniversaryBook.Load(settings.Calendar, AppContext.BaseDirectory, appData);
+            AnniversaryBook book = AnniversaryBook.Load(settings.Calendar, settings.DataFile, [AppContext.BaseDirectory, appData]);
             desktop.MainWindow = new MainWindow(book, DateOnly.FromDateTime(DateTime.Today), settings);
         }
 

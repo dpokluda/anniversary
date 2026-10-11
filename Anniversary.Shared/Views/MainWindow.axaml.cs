@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Text.Json;
 using Anniversary.Model;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 namespace Anniversary.Views;
 
@@ -11,6 +13,13 @@ namespace Anniversary.Views;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private static readonly FilePickerFileType DataFileType = new("Anniversary data")
+    {
+        Patterns = ["*.json"],
+        AppleUniformTypeIdentifiers = ["public.json"],
+        MimeTypes = ["application/json"]
+    };
+
     private readonly AnniversaryBook _book;
     private readonly UserSettings _settings;
     private readonly NativeMenu _nativeCalendarMenu;
@@ -51,11 +60,20 @@ public partial class MainWindow : Window
         FindNextMenuItem.InputGesture = OperatingSystem.IsMacOS()
             ? new KeyGesture(Key.G, KeyModifiers.Meta)
             : new KeyGesture(Key.F3);
+        OpenDataFileItem.InputGesture = OperatingSystem.IsMacOS()
+            ? new KeyGesture(Key.O, KeyModifiers.Meta)
+            : new KeyGesture(Key.O, KeyModifiers.Control);
+        SaveDataFileAsItem.InputGesture = OperatingSystem.IsMacOS()
+            ? new KeyGesture(Key.S, KeyModifiers.Meta | KeyModifiers.Shift)
+            : new KeyGesture(Key.S, KeyModifiers.Control | KeyModifiers.Shift);
 
         // The macOS menu bar: native menu items have no routed Click and no generated fields,
         // so they are found by their header and wired here.
         NativeMenu menuBar = NativeMenu.GetMenu(this)!;
         NativeItem(menuBar, "File", "Edit People…").Click += (_, _) => EditPeople();
+        NativeItem(menuBar, "File", "Open Data File…").Click += (_, _) => OpenDataFile();
+        NativeItem(menuBar, "File", "Save Data File As…").Click += (_, _) => SaveDataFileAs();
+        NativeItem(menuBar, "File", "Show Data File in Finder").Click += (_, _) => ShowDataFile();
         NativeItem(menuBar, "Go", "Yesterday").Click += (_, _) => ShowPreviousDay();
         NativeItem(menuBar, "Go", "Tomorrow").Click += (_, _) => ShowNextDay();
         NativeItem(menuBar, "Go", "Today").Click += (_, _) => ShowToday();
@@ -81,6 +99,7 @@ public partial class MainWindow : Window
         Refresh();
 
         Opened += OnOpened;
+        Activated += OnActivated;
     }
 
     /// <inheritdoc/>
@@ -97,6 +116,16 @@ public partial class MainWindow : Window
             FindNext();
             e.Handled = true;
         }
+        else if (command && e.Key == Key.O)
+        {
+            OpenDataFile();
+            e.Handled = true;
+        }
+        else if (command && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Key == Key.S)
+        {
+            SaveDataFileAs();
+            e.Handled = true;
+        }
 
         base.OnKeyDown(e);
     }
@@ -105,6 +134,21 @@ public partial class MainWindow : Window
     {
         QuitButton.Focus();
         await ShowWarnings();
+    }
+
+    private async void OnActivated(object? sender, EventArgs e)
+    {
+        // Picks up changes made elsewhere, e.g. on another computer through a cloud drive (spec 7.11).
+        await ReloadPeopleIfChanged();
+    }
+
+    private async Task ReloadPeopleIfChanged()
+    {
+        if (_book.ReloadPeopleIfChanged())
+        {
+            Refresh();
+            await ShowWarnings();
+        }
     }
 
     private void Refresh()
@@ -236,10 +280,82 @@ public partial class MainWindow : Window
 
     private async void EditPeople()
     {
+        await ReloadPeopleIfChanged();
         if (await new PeopleEditorWindow(_book).ShowDialog<bool>(this))
         {
             Refresh();
         }
+    }
+
+    private async void OpenDataFile()
+    {
+        IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open Data File",
+            FileTypeFilter = [DataFileType, FilePickerFileTypes.All]
+        });
+        string? path = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        if (path == null)
+        {
+            return;
+        }
+
+        try
+        {
+            _book.OpenDataFile(path);
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            await MessageDialog.Show(this, "Open Data File", $"Could not open the data file: {ex.Message}");
+            return;
+        }
+        UseDataFile(path);
+    }
+
+    private async void SaveDataFileAs()
+    {
+        IStorageFile? file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save Data File As",
+            SuggestedFileName = Path.GetFileName(_book.SavePathFor()),
+            DefaultExtension = "json",
+            FileTypeChoices = [DataFileType],
+            ShowOverwritePrompt = true
+        });
+        string? path = file?.TryGetLocalPath();
+        if (path == null)
+        {
+            return;
+        }
+
+        try
+        {
+            _book.SavePeople(_book.People, path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await MessageDialog.Show(this, "Save Data File As", $"Could not save the data file: {ex.Message}");
+            return;
+        }
+        UseDataFile(path);
+    }
+
+    private void UseDataFile(string path)
+    {
+        _settings.DataFile = path;
+        _settings.Save();
+        Refresh();
+    }
+
+    private async void ShowDataFile()
+    {
+        string? folder = Path.GetDirectoryName(_book.SavePathFor());
+        if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+        {
+            await MessageDialog.Show(this, "Data File", $"The data file's folder doesn't exist yet:{Environment.NewLine}{folder}");
+            return;
+        }
+        await Launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(folder));
     }
 
     private void ChooseTheme(AppTheme theme)
@@ -345,6 +461,21 @@ public partial class MainWindow : Window
     private void OnEditPeople(object? sender, RoutedEventArgs e)
     {
         EditPeople();
+    }
+
+    private void OnOpenDataFile(object? sender, RoutedEventArgs e)
+    {
+        OpenDataFile();
+    }
+
+    private void OnSaveDataFileAs(object? sender, RoutedEventArgs e)
+    {
+        SaveDataFileAs();
+    }
+
+    private void OnShowDataFile(object? sender, RoutedEventArgs e)
+    {
+        ShowDataFile();
     }
 
     private void OnThemeSystem(object? sender, RoutedEventArgs e)

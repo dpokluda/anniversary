@@ -48,6 +48,11 @@ public class UserSettings
     public string? Calendar { get; set; }
 
     /// <summary>
+    /// Gets or sets the full path of the data file chosen with Open or Save As, or <c>null</c> to use the configured one.
+    /// </summary>
+    public string? DataFile { get; set; }
+
+    /// <summary>
     /// Gets or sets the path of the file the settings are loaded from and saved to.
     /// </summary>
     [JsonIgnore]

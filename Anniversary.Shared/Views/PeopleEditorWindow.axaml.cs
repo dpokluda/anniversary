@@ -136,6 +136,25 @@ public partial class PeopleEditorWindow : Window
             return;
         }
 
+        // Don't silently replace changes made elsewhere, or a file whose people aren't in this list (spec 7.8).
+        string nl = Environment.NewLine;
+        if (_book.HasDataFileChanged())
+        {
+            if (!await MessageDialog.Confirm(this, "Edit People",
+                $"The data file was changed elsewhere, for example on another computer, after it was loaded:{nl}{_savePath}" +
+                $"{nl}{nl}Saving replaces those changes with yours.", "Overwrite"))
+            {
+                return;
+            }
+        }
+        else if (_book.DataFileLoadFailed &&
+            !await MessageDialog.Confirm(this, "Edit People",
+                $"The data file couldn't be loaded, so its people aren't in this list:{nl}{_savePath}" +
+                $"{nl}{nl}If it's on a cloud drive that hasn't finished syncing, cancel and try again later.", "Save Anyway"))
+        {
+            return;
+        }
+
         try
         {
             _book.SavePeople(_rows.Select(r => r.ToPerson()).ToList(), _savePath);

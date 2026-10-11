@@ -16,6 +16,11 @@
       <MenuItem x:Name="FindNextMenuItem" Header="Find Next" Click="OnFindNext" />
       <Separator />
       <MenuItem Header="Edit People…" Click="OnEditPeople" />
+      <MenuItem Header="Data File">
+        <MenuItem x:Name="OpenDataFileItem" Header="Open…" Click="OnOpenDataFile" />
+        <MenuItem x:Name="SaveDataFileAsItem" Header="Save As…" Click="OnSaveDataFileAs" />
+        <MenuItem Header="Show in Folder" Click="OnShowDataFile" />
+      </MenuItem>
       <Separator />
       <MenuItem x:Name="CalendarMenu" Header="Nameday Calendar" />
       <MenuItem Header="Theme">
@@ -34,6 +39,10 @@
       <NativeMenuItem Header="File">
         <NativeMenu>
           <NativeMenuItem Header="Edit People…" />
+          <NativeMenuItemSeparator />
+          <NativeMenuItem Header="Open Data File…" Gesture="Meta+O" />
+          <NativeMenuItem Header="Save Data File As…" Gesture="Meta+Shift+S" />
+          <NativeMenuItem Header="Show Data File in Finder" />
         </NativeMenu>
       </NativeMenuItem>
       <NativeMenuItem Header="View">

@@ -48,6 +48,12 @@ public sealed class AnniversaryBook
         AllowTrailingCommas = true
     };
 
+    private static readonly JsonDocumentOptions DocumentOptions = new()
+    {
+        CommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true
+    };
+
     private static readonly JsonSerializerOptions WriteOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -64,7 +70,10 @@ public sealed class AnniversaryBook
     private List<Person> _people = new();
     private List<CalendarInfo> _calendars = new();
 
-    private AnniversaryBook(string[] folders)
+    // The data file's last-write time and size when the people were loaded or saved (spec 5.6); null if there was none.
+    private (DateTime WriteTime, long Length)? _dataFileStamp;
+
+    private AnniversaryBook(IEnumerable<string> folders)
     {
         _folders = folders.Where(f => !string.IsNullOrWhiteSpace(f)).ToArray();
         AppDataFolder = _folders.Length > 0 ? _folders[^1] : string.Empty;
@@ -86,12 +95,19 @@ public sealed class AnniversaryBook
     public IReadOnlyList<Person> People => _people;
 
     /// <summary>
-    /// Gets the path of the people file, or <c>null</c> when the people came from the built-in default.
+    /// Gets the data file in use: the file the people were loaded from or saved to, or a chosen or absolute file that
+    /// was missing or couldn't be read. <c>null</c> when the people came from the built-in default.
     /// </summary>
     public string? DataFilePath { get; private set; }
 
     /// <summary>
-    /// Gets the user app-data folder (the last folder passed to <see cref="Load"/>), or an empty string.
+    /// Gets whether the data file wasn't found or couldn't be read when the people were loaded (spec 5.4).
+    /// </summary>
+    public bool DataFileLoadFailed { get; private set; }
+
+    /// <summary>
+    /// Gets the user app-data folder (the last folder passed to <see cref="Load(string?, string?, IReadOnlyList{string})"/>),
+    /// or an empty string.
     /// </summary>
     public string AppDataFolder { get; }
 
@@ -116,6 +132,23 @@ public sealed class AnniversaryBook
     /// <returns>The loaded book. Problems are reported in <see cref="Warnings"/>.</returns>
     public static AnniversaryBook Load(string? preferredCalendar, params string[] folders)
     {
+        return Load(preferredCalendar, null, folders);
+    }
+
+    /// <summary>
+    /// Loads the configuration, the name-day calendar and the people, from the data file chosen by the user if any.
+    /// </summary>
+    /// <param name="preferredCalendar">
+    /// The calendar chosen by the user, or <c>null</c> to use the configured one. When none is configured, the calendar
+    /// for the region of <see cref="CultureInfo.CurrentCulture"/> is used, otherwise the US one (spec 5.7).
+    /// </param>
+    /// <param name="preferredDataFile">
+    /// The full path of the data file chosen by the user, or <c>null</c> to use the configured one (spec 5.3).
+    /// </param>
+    /// <param name="folders">The folders to look in, in order of precedence; the last one is the user app-data folder.</param>
+    /// <returns>The loaded book. Problems are reported in <see cref="Warnings"/>.</returns>
+    public static AnniversaryBook Load(string? preferredCalendar, string? preferredDataFile, IReadOnlyList<string> folders)
+    {
         var book = new AnniversaryBook(folders);
         book.LoadConfig();
         book.RefreshCalendars();
@@ -134,7 +167,7 @@ public sealed class AnniversaryBook
             calendar = book.CalendarForRegion(CultureInfo.CurrentCulture);
         }
         book.LoadCalendar(calendar);
-        book.LoadPeople();
+        book.LoadPeople(string.IsNullOrWhiteSpace(preferredDataFile) ? book.Config.DataFile : preferredDataFile);
         return book;
     }
 
@@ -341,7 +374,65 @@ public sealed class AnniversaryBook
 
         _people = data.People;
         DataFilePath = path;
+        DataFileLoadFailed = false;
+        _dataFileStamp = StampOf(path);
         IndexPeople();
+    }
+
+    /// <summary>
+    /// Reads a data file and uses it where it is from now on (spec 7.11). Nothing changes if it can't be read.
+    /// </summary>
+    /// <param name="path">The full path of the data file.</param>
+    /// <exception cref="JsonException">The file isn't valid JSON or has no "data" list of people.</exception>
+    /// <exception cref="IOException">The file couldn't be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file isn't readable.</exception>
+    public void OpenDataFile(string path)
+    {
+        string json = File.ReadAllText(path);
+        using (JsonDocument document = JsonDocument.Parse(json, DocumentOptions))
+        {
+            // A calendar or any other JSON file would otherwise open as an empty list, and saving would replace it.
+            bool hasPeople = document.RootElement.ValueKind == JsonValueKind.Object &&
+                document.RootElement.EnumerateObject().Any(p =>
+                    p.Name.Equals("data", StringComparison.OrdinalIgnoreCase) && p.Value.ValueKind == JsonValueKind.Array);
+            if (!hasPeople)
+            {
+                throw new JsonException("This isn't an Anniversary data file (it has no \"data\" list).");
+            }
+        }
+
+        _people = JsonSerializer.Deserialize<AnniversaryData>(json, ReadOptions)?.People ?? new List<Person>();
+        DataFilePath = path;
+        DataFileLoadFailed = false;
+        _dataFileStamp = StampOf(path);
+        IndexPeople();
+    }
+
+    /// <summary>
+    /// Returns whether the data file exists and was changed since the people were loaded or saved, e.g. on another
+    /// computer through a cloud drive, or appeared after being missing (spec 5.6).
+    /// </summary>
+    /// <returns><c>true</c> if the file's last-write time or size differs from when it was loaded or saved.</returns>
+    public bool HasDataFileChanged()
+    {
+        (DateTime WriteTime, long Length)? stamp = StampOf(DataFilePath);
+        return stamp != null && stamp != _dataFileStamp;
+    }
+
+    /// <summary>
+    /// Loads the people again if the data file changed (see <see cref="HasDataFileChanged"/>). Clears
+    /// <see cref="Warnings"/> first; loading problems are reported there as at start-up (spec 5.4).
+    /// </summary>
+    /// <returns><c>true</c> if the people were loaded again.</returns>
+    public bool ReloadPeopleIfChanged()
+    {
+        if (!HasDataFileChanged())
+        {
+            return false;
+        }
+        _warnings.Clear();
+        LoadPeople(DataFilePath!);
+        return true;
     }
 
     private bool ShowYears(DateOnly date, DateOnly day)
@@ -508,28 +599,46 @@ public sealed class AnniversaryBook
         return new DateOnly(year, monthAndDay / 31, monthAndDay % 31 + 1);
     }
 
-    private void LoadPeople()
+    private void LoadPeople(string name)
     {
         _people = new List<Person>();
-        DataFilePath = null;
+        DataFileLoadFailed = false;
+        string? path = null;
         try
         {
-            string? json = ReadFile(Config.DataFile, out string? path);
+            string? json = ReadFile(name, out path);
             if (json == null)
             {
-                _warnings.Add($"Data file not found: {Config.DataFile}");
+                _warnings.Add($"Data file not found: {name}");
+                DataFileLoadFailed = true;
+
+                // A chosen or absolute file stays the data file, so it's saved there and picked up when it appears.
+                path = Path.IsPathRooted(name) ? name : null;
             }
             else
             {
                 _people = JsonSerializer.Deserialize<AnniversaryData>(json, ReadOptions)?.People ?? new List<Person>();
-                DataFilePath = path;
             }
         }
         catch (Exception ex) when (IsLoadException(ex))
         {
             _warnings.Add($"Error loading data: {ex.Message}");
+            DataFileLoadFailed = true;
         }
+
+        DataFilePath = path;
+        _dataFileStamp = StampOf(path);
         IndexPeople();
+    }
+
+    private static (DateTime WriteTime, long Length)? StampOf(string? path)
+    {
+        if (path == null)
+        {
+            return null;
+        }
+        var info = new FileInfo(path);
+        return info.Exists ? (info.LastWriteTimeUtc, info.Length) : null;
     }
 
     private void IndexPeople()

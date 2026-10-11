@@ -13,7 +13,7 @@ Linux.
 | Area | Status |
 |---|---|
 | Spec and plan | `specs/spec.md` (source of truth), `specs/plan.md`; mocks in `specs/screens/` (approximate, larger than the real app; the spec's sizes win) |
-| Code | `Anniversary.Shared` (all UI and logic), `Anniversary.Desktop` (exe), `Anniversary.Tests` (165 tests, all passing) |
+| Code | `Anniversary.Shared` (all UI and logic), `Anniversary.Desktop` (exe), `Anniversary.Tests` (181 tests, all passing) |
 | Windows | Verified: v4's size and native font sizes; light and dark |
 | macOS | Verified on Apple Silicon. Fonts, line spacing, margins and corners have macOS-specific values (spec 7.1; lessons below) |
 | Linux | Verified on Fedora. No Linux-specific values were needed: Linux uses the Windows look with a 13 px font |
@@ -32,15 +32,17 @@ The main window shows "Today is" (date and the calendar's names or holidays), Na
 commands menu:
 - Today, Change Date…, Find… (Ctrl/⌘+F), Find Next (F3/⌘G)
 - Edit People… (a grid editor with an Anniversaries sub-dialog)
+- Data File ▸ Open… (Ctrl/⌘+O), Save As… (Ctrl+Shift+S/⇧⌘S), Show in Folder
 - Nameday Calendar ▸, Theme ▸ System/Light/Dark
 - About
 
 macOS also has the commands in the menu bar (`NativeMenu`); Windows and Linux ignore it.
 
 Data files are looked up next to the exe, then in the app-data folder (`%APPDATA%\Anniversary`,
-`~/Library/Application Support/Anniversary`, `~/.config/Anniversary`), then in built-in defaults. The built-in people
-list is empty; to see real data, copy v4's `Anniversary.Data.json` into the app-data folder. The app writes only
-`usersettings.json` (theme and calendar) and, from the editor, `Anniversary.Data.json`.
+`~/Library/Application Support/Anniversary`, `~/.config/Anniversary`), then in built-in defaults. A data file chosen
+with Data File ▸ Open… or Save As… wins (spec 5.3). The built-in people list is empty; to see real data, open v4's
+`Anniversary.Data.json` with Data File ▸ Open…. The app writes only `usersettings.json` (theme, calendar and chosen
+data file) and the data file (from the editor and Save As…).
 
 ## Decisions already made (don't revisit without asking the user)
 
@@ -62,6 +64,10 @@ list is empty; to see real data, copy v4's `Anniversary.Data.json` into the app-
   name **Nameday Calendar**. Name days are never typed in by hand (pinned sources only); holiday entries are written in
   `Build-Calendars.ps1` with the law or tradition behind each one. Names on the same day are joined with ", ".
   Observed days off and Orthodox Easter aren't supported yet.
+- **Data file sharing** (spec 7.11): Open… uses the chosen file **where it is** (no copy, no Import, no merge), for a
+  file sent by family or one on a cloud drive shared by several computers. The path is remembered per computer in
+  `usersettings.json`. The file is reloaded when the main window is activated and it changed (last-write time or size);
+  the editor asks before overwriting changes made elsewhere, or saving over a file that was missing or unreadable.
 - **Platform-specific look values are resources set in `App.Initialize`** (spec 7.1): `AppFontSize`,
   `AppNamesFontSize`, `AppDateFontSize`, `AppCaptionFontSize`, `AppStrongFontWeight`, the `App…LineHeight` resources,
   `AppWindowMargin`, `AppWindowHeight`, and on macOS also `ContentControlThemeFontFamily` and `ControlCornerRadius`.
@@ -90,7 +96,8 @@ list is empty; to see real data, copy v4's `Anniversary.Data.json` into the app-
 ## Avalonia 12 gotchas
 
 - `NativeMenuItem` has no routed `Click` event and gets no generated fields, so `MainWindow` finds the macOS menu items by
-  header and wires them in code.
+  header and wires them in code. `NativeMenu.Items` is typed `NativeMenuItemBase`; filter with `OfType<NativeMenuItem>()`
+  (a `NativeMenuItemSeparator` shows up with the header "-").
 - Both menu kinds use the same `MenuItemToggleType` enum for radio items.
 - Values set inside control templates can't be overridden by styles. The calendar's and the menu chevron's sizes are fixed
   by `TemplateApplied` class handlers in `App.axaml.cs`.
@@ -107,7 +114,7 @@ then:
 ```bash
 git clone https://github.com/dpokluda/anniversary.git && cd anniversary
 dotnet build Anniversary.slnx
-dotnet test --project Anniversary.Tests      # expect 165 passed
+dotnet test --project Anniversary.Tests      # expect 181 passed
 dotnet run --project Anniversary.Desktop
 ```
 
