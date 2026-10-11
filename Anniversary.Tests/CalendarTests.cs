@@ -77,12 +77,9 @@ public sealed class CalendarTests : IDisposable
     }
 
     [Fact]
-    public void ConfiguredCalendarIsUsedWhenPreferredIsGone()
+    public void ChosenCalendarThatIsGoneFallsBackToTheRegion()
     {
-        TestFiles.WriteConfig(_exe, calendarFile: "Anniversary.Calendar.Slovak.json");
-        _exe.Write(TestFiles.DataName, TestFiles.People("[]"));
-
-        AnniversaryBook book = AnniversaryBook.Load("Anniversary.Calendar.Removed.json", _exe.FolderPath);
+        AnniversaryBook book = TestFiles.LoadInCulture("sk-SK", "Anniversary.Calendar.Removed.json");
 
         Assert.Equal("Anniversary.Calendar.Slovak.json", book.CalendarFile);
         Assert.Empty(book.Warnings);
@@ -98,7 +95,7 @@ public sealed class CalendarTests : IDisposable
     [InlineData("de-DE", "Anniversary.Calendar.US.json")]
     [InlineData("cs", "Anniversary.Calendar.US.json")]
     [InlineData("", "Anniversary.Calendar.US.json")]
-    public void CalendarForTheRegionIsUsedWhenNoneIsChosenOrConfigured(string culture, string expected)
+    public void CalendarForTheRegionIsUsedWhenNoneIsChosen(string culture, string expected)
     {
         AnniversaryBook book = TestFiles.LoadInCulture(culture, null);
 
@@ -107,16 +104,11 @@ public sealed class CalendarTests : IDisposable
     }
 
     [Fact]
-    public void ChosenAndConfiguredCalendarsWinOverTheRegion()
+    public void ChosenCalendarWinsOverTheRegion()
     {
-        TestFiles.WriteConfig(_exe, calendarFile: "Anniversary.Calendar.Slovak.json");
-        _exe.Write(TestFiles.DataName, TestFiles.People("[]"));
+        AnniversaryBook book = TestFiles.LoadInCulture("cs-CZ", "Anniversary.Calendar.Polish.json");
 
-        AnniversaryBook configured = TestFiles.LoadInCulture("cs-CZ", null, _exe.FolderPath);
-        AnniversaryBook chosen = TestFiles.LoadInCulture("cs-CZ", "Anniversary.Calendar.Polish.json", _exe.FolderPath);
-
-        Assert.Equal("Anniversary.Calendar.Slovak.json", configured.CalendarFile);
-        Assert.Equal("Anniversary.Calendar.Polish.json", chosen.CalendarFile);
+        Assert.Equal("Anniversary.Calendar.Polish.json", book.CalendarFile);
     }
 
     [Fact]
@@ -147,11 +139,12 @@ public sealed class CalendarTests : IDisposable
     public void CalendarGivenByAbsolutePathIsListed()
     {
         string path = _appData.Write("My.Names.json", TestFiles.Calendar("""{ "10-09": "Mine" }""", name: "Mine"));
-        TestFiles.WriteConfig(_exe, calendarFile: path);
-
         AnniversaryBook book = AnniversaryBook.Load(null, _exe.FolderPath);
 
+        book.UseCalendar(path);
+
         Assert.Contains(book.Calendars, c => c.FileName == path && c.DisplayName == "Mine");
+        Assert.Equal("Mine", book.GetDay(new DateOnly(2026, 10, 9)).CalendarNames);
     }
 
     [Fact]

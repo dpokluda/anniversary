@@ -45,7 +45,7 @@ public partial class MainWindow : Window
     /// </summary>
     /// <param name="book">The loaded data.</param>
     /// <param name="day">The day to show first.</param>
-    /// <param name="settings">The user settings (theme and calendar), saved when they change.</param>
+    /// <param name="settings">The settings (spec 5.5), the same object the book was loaded with; saved when a menu choice changes.</param>
     public MainWindow(AnniversaryBook book, DateOnly day, UserSettings settings)
     {
         InitializeComponent();
@@ -111,7 +111,7 @@ public partial class MainWindow : Window
             StartAtLoginItem.Header = "Open at Login";
         }
 
-        NextDaysCaption.Text = $"Next {book.Config.NumberOfDaysAhead} days";
+        NextDaysCaption.Text = $"Next {book.Settings.NumberOfDaysAhead} days";
         UpdateThemeChecks();
         UpdateCalendarMenus();
         Refresh();

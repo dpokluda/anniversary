@@ -151,9 +151,14 @@ public partial class App : Application
         {
             string appData = AppDataFolder;
             UserSettings settings = UserSettings.Load(Path.Combine(appData, UserSettingsFileName));
+            if (!File.Exists(settings.FilePath))
+            {
+                // Every setting is then in the file, ready to edit (spec 5.5).
+                settings.Save();
+            }
             ApplyTheme(settings.Theme);
 
-            AnniversaryBook book = AnniversaryBook.Load(settings.Calendar, settings.DataFile, [AppContext.BaseDirectory, appData]);
+            AnniversaryBook book = AnniversaryBook.Load(settings, [AppContext.BaseDirectory, appData]);
             desktop.MainWindow = new MainWindow(book, DateOnly.FromDateTime(DateTime.Today), settings);
         }
 

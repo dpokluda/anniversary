@@ -8,7 +8,7 @@ using Anniversary.Model;
 namespace Anniversary;
 
 /// <summary>
-/// Holds the configuration, the name-day calendar and the people, and answers everything the UI asks about a day.
+/// Holds the settings, the name-day calendar and the people, and answers everything the UI asks about a day.
 /// </summary>
 /// <remarks>
 /// This is the only non-UI logic class. It never reads the clock and never shows UI: the caller passes the day in,
@@ -17,18 +17,14 @@ namespace Anniversary;
 public sealed class AnniversaryBook
 {
     /// <summary>
-    /// The configuration file name.
-    /// </summary>
-    public const string ConfigFileName = "appsettings.json";
-
-    /// <summary>
-    /// The prefix of warnings about the configuration file (the UI shows them with a different title).
+    /// The prefix of warnings about the settings file (the UI shows them with a different title).
     /// </summary>
     public const string ConfigurationWarningPrefix = "Error loading configuration";
 
     private const string CalendarFilePrefix = "Anniversary.Calendar.";
     private const string CalendarFileSuffix = ".json";
     private const string FallbackCalendarFile = "Anniversary.Calendar.US.json";
+    private const string DefaultDataFile = "Anniversary.Data.json";
     private const int MaxReportedKeys = 5;
 
     private static readonly char[] WordDelimiters = [' ', ',', ';', '\t', '/', '-'];
@@ -73,16 +69,17 @@ public sealed class AnniversaryBook
     // The data file's last-write time and size when the people were loaded or saved (spec 5.6); null if there was none.
     private (DateTime WriteTime, long Length)? _dataFileStamp;
 
-    private AnniversaryBook(IEnumerable<string> folders)
+    private AnniversaryBook(UserSettings settings, IEnumerable<string> folders)
     {
+        Settings = settings;
         _folders = folders.Where(f => !string.IsNullOrWhiteSpace(f)).ToArray();
         AppDataFolder = _folders.Length > 0 ? _folders[^1] : string.Empty;
     }
 
     /// <summary>
-    /// Gets the configuration.
+    /// Gets the settings the book was loaded with (spec 5.5); the main window shares the same object.
     /// </summary>
-    public AppConfig Config { get; private set; } = new();
+    public UserSettings Settings { get; }
 
     /// <summary>
     /// Gets the problems found by the last load operation.
@@ -106,7 +103,7 @@ public sealed class AnniversaryBook
     public bool DataFileLoadFailed { get; private set; }
 
     /// <summary>
-    /// Gets the user app-data folder (the last folder passed to <see cref="Load(string?, string?, IReadOnlyList{string})"/>),
+    /// Gets the user app-data folder (the last folder passed to <see cref="Load(UserSettings, IReadOnlyList{string})"/>),
     /// or an empty string.
     /// </summary>
     public string AppDataFolder { get; }
@@ -123,52 +120,44 @@ public sealed class AnniversaryBook
     public string CalendarFile { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Loads the configuration, the name-day calendar and the people.
+    /// Loads the name-day calendar and the people with default settings.
     /// </summary>
     /// <param name="preferredCalendar">
-    /// The calendar chosen by the user, or <c>null</c> to use the configured one. When none is configured, the calendar
-    /// for the region of <see cref="CultureInfo.CurrentCulture"/> is used, otherwise the US one (spec 5.7).
+    /// The calendar chosen by the user, or <c>null</c> for the calendar for the region of
+    /// <see cref="CultureInfo.CurrentCulture"/>, otherwise the US one (spec 5.7).
     /// </param>
     /// <param name="folders">The folders to look in, in order of precedence; the last one is the user app-data folder.</param>
     /// <returns>The loaded book. Problems are reported in <see cref="Warnings"/>.</returns>
     public static AnniversaryBook Load(string? preferredCalendar, params string[] folders)
     {
-        return Load(preferredCalendar, null, folders);
+        return Load(new UserSettings { Calendar = preferredCalendar }, folders);
     }
 
     /// <summary>
-    /// Loads the configuration, the name-day calendar and the people, from the data file chosen by the user if any.
+    /// Loads the name-day calendar and the people as the settings say (spec 5.3, 5.5, 5.7).
     /// </summary>
-    /// <param name="preferredCalendar">
-    /// The calendar chosen by the user, or <c>null</c> to use the configured one. When none is configured, the calendar
-    /// for the region of <see cref="CultureInfo.CurrentCulture"/> is used, otherwise the US one (spec 5.7).
-    /// </param>
-    /// <param name="preferredDataFile">
-    /// The full path of the data file chosen by the user, or <c>null</c> to use the configured one (spec 5.3).
+    /// <param name="settings">
+    /// The settings, kept as <see cref="Settings"/>. If they couldn't be read (<see cref="UserSettings.LoadError"/>),
+    /// that is reported in <see cref="Warnings"/>.
     /// </param>
     /// <param name="folders">The folders to look in, in order of precedence; the last one is the user app-data folder.</param>
     /// <returns>The loaded book. Problems are reported in <see cref="Warnings"/>.</returns>
-    public static AnniversaryBook Load(string? preferredCalendar, string? preferredDataFile, IReadOnlyList<string> folders)
+    public static AnniversaryBook Load(UserSettings settings, IReadOnlyList<string> folders)
     {
-        var book = new AnniversaryBook(folders);
-        book.LoadConfig();
+        var book = new AnniversaryBook(settings, folders);
+        if (settings.LoadError != null)
+        {
+            book._warnings.Add(
+                $"{ConfigurationWarningPrefix}: {settings.FilePath}: {settings.LoadError}{Environment.NewLine}Using default settings.");
+        }
         book.RefreshCalendars();
 
-        string calendar;
-        if (preferredCalendar != null && book._calendars.Any(c => IsSameFile(c.FileName, preferredCalendar)))
-        {
-            calendar = preferredCalendar;
-        }
-        else if (!string.IsNullOrWhiteSpace(book.Config.CalendarFile))
-        {
-            calendar = book.Config.CalendarFile;
-        }
-        else
-        {
-            calendar = book.CalendarForRegion(CultureInfo.CurrentCulture);
-        }
+        string? chosen = settings.Calendar;
+        string calendar = chosen != null && book._calendars.Any(c => IsSameFile(c.FileName, chosen))
+            ? chosen
+            : book.CalendarForRegion(CultureInfo.CurrentCulture);
         book.LoadCalendar(calendar);
-        book.LoadPeople(string.IsNullOrWhiteSpace(preferredDataFile) ? book.Config.DataFile : preferredDataFile);
+        book.LoadPeople(book.DataFileName);
         return book;
     }
 
@@ -230,7 +219,7 @@ public sealed class AnniversaryBook
         var nextNames = new List<string>();
 
         // The days after 31 December 9999, the last day DateOnly can hold, don't exist.
-        int daysAhead = Math.Min(Config.NumberOfDaysAhead, DateOnly.MaxValue.DayNumber - day.DayNumber);
+        int daysAhead = Math.Min(Settings.NumberOfDaysAhead, DateOnly.MaxValue.DayNumber - day.DayNumber);
         for (int i = 1; i <= daysAhead; i++)
         {
             DateOnly next = day.AddDays(i);
@@ -348,7 +337,7 @@ public sealed class AnniversaryBook
         {
             return DataFilePath;
         }
-        return Path.IsPathRooted(Config.DataFile) ? Config.DataFile : Path.Combine(AppDataFolder, Config.DataFile);
+        return Path.IsPathRooted(DataFileName) ? DataFileName : Path.Combine(AppDataFolder, DataFileName);
     }
 
     /// <summary>
@@ -436,27 +425,13 @@ public sealed class AnniversaryBook
         return true;
     }
 
+    // The data file named in the settings, or the default one (spec 5.3).
+    private string DataFileName => string.IsNullOrWhiteSpace(Settings.DataFile) ? DefaultDataFile : Settings.DataFile;
+
     private bool ShowYears(DateOnly date, DateOnly day)
     {
         // A year after the shown day means "year unknown" (v4 data uses 9999 for that), so no negative years.
-        return Config.DisplayYearsOnBirthdays && date.Year <= day.Year;
-    }
-
-    private void LoadConfig()
-    {
-        try
-        {
-            string? json = ReadFile(ConfigFileName, out _);
-            if (json != null)
-            {
-                Config = JsonSerializer.Deserialize<AppConfig>(json, ReadOptions) ?? new AppConfig();
-            }
-        }
-        catch (Exception ex) when (IsLoadException(ex))
-        {
-            _warnings.Add($"{ConfigurationWarningPrefix}: {ex.Message}{Environment.NewLine}Using default settings.");
-            Config = new AppConfig();
-        }
+        return Settings.DisplayYearsOnBirthdays && date.Year <= day.Year;
     }
 
     private void LoadCalendar(string fileName)

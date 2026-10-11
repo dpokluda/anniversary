@@ -73,13 +73,14 @@ function New-Icon([int] $size)
 
     if ($small)
     {
-        # Shallow binding so the day number gets most of the page (title bar and taskbar sizes).
-        $px = 8; $py = 16; $pw = 240; $ph = 232; $radius = 30; $header = 44
+        # A tall page, as in v4, with a shallow binding so the day number gets most of it (title bar and taskbar
+        # sizes). At 16 px its outline lies on whole pixels.
+        $px = 24; $py = 8; $pw = 208; $ph = 240; $radius = 30; $header = 44
     }
     else
     {
-        # A shallow binding leaves room for the day number and the lines of names below it.
-        $px = 30; $py = 34; $pw = 196; $ph = 186; $radius = 20; $header = if ($medium) { 42 } else { 40 }
+        # A tall page, as in v4; a shallow binding leaves room for the day number and the lines of names below it.
+        $px = 38; $py = 18; $pw = 180; $ph = 210; $radius = 20; $header = if ($medium) { 42 } else { 40 }
     }
 
     # Soft shadow
@@ -166,8 +167,9 @@ function New-Icon([int] $size)
     $bounds = $digits.GetBounds()
     if ($small)
     {
-        # The number gets about 60% of the page body, centred, so there is white space all around it.
-        $body = $ph - $header; $areaHeight = $body * 0.56; $areaTop = $py + $header + ($body - $areaHeight) / 2 + 4; $maxWidth = $pw * 0.62
+        # The number gets about 60% of the page body, centred, so there is white space all around it. The narrow page
+        # lets it take more of the width, so it's as big as on a square page.
+        $body = $ph - $header; $areaHeight = $body * 0.56; $areaTop = $py + $header + ($body - $areaHeight) / 2 + 4; $maxWidth = $pw * 0.715
     }
     elseif ($medium)
     {
@@ -175,7 +177,7 @@ function New-Icon([int] $size)
     }
     else
     {
-        $areaTop = $py + $header + 14; $areaHeight = 58; $maxWidth = $pw - 76
+        $areaTop = $py + $header + 16; $areaHeight = 68; $maxWidth = $pw - 76
     }
     $scale = [Math]::Min($areaHeight / $bounds.Height, $maxWidth / $bounds.Width)
     $matrix = [System.Drawing.Drawing2D.Matrix]::new()
@@ -193,9 +195,9 @@ function New-Icon([int] $size)
         $pen.StartCap = 'Round'
         $pen.EndCap = 'Round'
         # Three evenly spaced lines; two (further apart) at 48-64 px so they stay distinct.
-        $lineY = $areaTop + $areaHeight + 18
-        $widths = if ($size -ge 128) { @(64, 52, 38) } else { @(62, 44) }
-        $spacing = if ($size -ge 128) { 16 } else { 22 }
+        $lineY = $areaTop + $areaHeight + 21
+        $widths = if ($size -ge 128) { @(59, 48, 35) } else { @(57, 40) }
+        $spacing = if ($size -ge 128) { 19 } else { 26 }
         for ($i = 0; $i -lt $widths.Count; $i++)
         {
             $y = [Math]::Round(($lineY + $i * $spacing) * $k) / $k
@@ -228,12 +230,17 @@ function New-MacIcon([int] $size)
     $g.FillPath((New-VerticalGradient 100 924 (Rgb 255 255 255) (Rgb 0xEE 0xF0 0xF4)), $tile)
     $g.ResetTransform()
 
-    # The calendar is drawn at its own size, so it keeps that size's details, at 82% of the icon. An even size keeps it
-    # on whole pixels. Row 132.5 of its 256 grid goes to the middle: a little below the middle of its outline, as the
-    # thin rings weigh little.
-    $inner = 2 * [Math]::Round($size * 0.82 / 2)
+    # The calendar is drawn at its own size, so it keeps that size's details, at 74% of the icon: about 36 px (at 1024)
+    # from the square's edges to the rings above and the shadow below. An even size keeps it on whole pixels. Row 128.5
+    # of its 256 grid goes to the middle: a little below the middle of its outline, as the thin rings weigh little.
+    $inner = 2 * [Math]::Round($size * 0.743 / 2)
+    if ($inner -le 24)
+    {
+        # The small layout's page (240 high) fills more of its square than the larger one's (210), so it's drawn smaller.
+        $inner = 2 * [Math]::Round($inner * 210 / 240 / 2)
+    }
     $x = ($size - $inner) / 2
-    $y = [Math]::Round($size / 2 - $inner * 132.5 / 256)
+    $y = [Math]::Round($size / 2 - $inner * 128.5 / 256)
     $calendar = New-Icon $inner
     $g.InterpolationMode = 'NearestNeighbor'
     $g.DrawImage($calendar, [System.Drawing.Rectangle]::new($x, $y, $inner, $inner))

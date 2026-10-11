@@ -133,9 +133,11 @@ calendars. It looks for each file in this order, and the first one found wins:
 | File | What it is | Written by the app? |
 |---|---|---|
 | `Anniversary.Data.json` | the people (edit them with **⋯ ▸ Edit People…**); any file chosen with **⋯ ▸ Data File ▸ Open…** works too | yes, when you save in the editor |
-| `appsettings.json` | configuration (`calendarFile`, `dataFile`, `displayYearsOnBirthdays`, `numberOfDaysAhead`) | never |
-| `usersettings.json` | the chosen theme, calendar and data file | yes |
+| `usersettings.json` | all settings: the theme, calendar and data file chosen in the menus, plus `numberOfDaysAhead` and `displayYearsOnBirthdays` to edit by hand (with the app closed) | yes, when a menu choice changes |
 | `Anniversary.Calendar.*.json` | extra or replacement calendars | never |
+
+`usersettings.json` is only in the app-data folder; the app creates it at the first start. v4's `appsettings.json` is
+no longer read (spec 5.5).
 
 ### Sharing your data
 
@@ -151,20 +153,20 @@ app has synced it. If the file was changed elsewhere while you were editing, the
 the file is missing when the app starts (for example, not synced yet), the app says so and keeps waiting for it, and
 the editor asks before creating a new one. Each computer remembers its own path to the file.
 
-**Moving from v4:** open your v4 `Anniversary.Data.json` with **⋯ ▸ Data File ▸ Open…**, or copy it (and
-`appsettings.json`, if you changed it) from the v4 folder into the app-data folder above. The format is unchanged. A
-birth year of `9999` still means "year unknown". If your OS region isn't Czechia, choose **Czechia (Česko)** in the
-calendar menu once (a copied v4 `appsettings.json` already selects it).
+**Moving from v4:** open your v4 `Anniversary.Data.json` with **⋯ ▸ Data File ▸ Open…**, or copy it from the v4 folder
+into the app-data folder above. The format is unchanged. A birth year of `9999` still means "year unknown". If your OS
+region isn't Czechia, choose **Czechia (Česko)** in the calendar menu once. If you changed `numberOfDaysAhead` or
+`displayYearsOnBirthdays` in v4's `appsettings.json`, set them in `usersettings.json` instead.
 
 ## Calendars
 
 The default calendar is the one for your OS region, for example Czech in Czechia or Slovak in Slovakia. For any other
 region it's the **United States** calendar: the federal holidays plus well-known observances such as Mother's Day and
 Halloween. The name-day calendars list names instead. **International Days** lists well-known UN days, such as World
-Water Day and the International Day of Peace, plus a few fun ones like Pi Day and International Beer Day. To use another one, choose it with **⋯ ▸ Calendar**
-(macOS: **View ▸ Calendar**), where International Days comes last; the choice is remembered. A `calendarFile` in your own `appsettings.json` also
-works. To add a calendar, put an `Anniversary.Calendar.{Name}.json` file into the app-data folder; it appears in the
-menu the next time it opens.
+Water Day and the International Day of Peace, plus a few fun ones like Pi Day and International Beer Day. To use another
+one, choose it with **⋯ ▸ Calendar** (macOS: **View ▸ Calendar**), where International Days comes last; the choice is
+remembered. To add a calendar, put an `Anniversary.Calendar.{Name}.json` file into the app-data folder; it appears in
+the menu the next time it opens.
 
 Besides `MM-dd` dates, a calendar file can list days that move from year to year: `11-Thu-4` (the fourth Thursday of
 November), `05-Mon-last` (the last Monday of May) and `easter`, each optionally moved by up to 99 days (`easter+1`,

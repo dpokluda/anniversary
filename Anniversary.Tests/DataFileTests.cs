@@ -19,14 +19,12 @@ public sealed class DataFileTests : IDisposable
     }
 
     [Fact]
-    public void ChosenDataFileWinsOverTheConfiguredOne()
+    public void ChosenDataFileIsUsedInsteadOfTheDefaultOne()
     {
-        TestFiles.WriteConfig(_appData);
-        _appData.Write(TestFiles.CalendarName, TestFiles.Calendar("{}"));
-        _appData.Write(TestFiles.DataName, TestFiles.People("""[{ "name": "Configured" }]"""));
+        _appData.Write("Anniversary.Data.json", TestFiles.People("""[{ "name": "Default" }]"""));
         string chosen = _cloud.Write("Family.json", TestFiles.People("""[{ "name": "Chosen" }]"""));
 
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = chosen }, [_appData.FolderPath]);
 
         Assert.Equal("Chosen", Assert.Single(book.People).Name);
         Assert.Equal(chosen, book.DataFilePath);
@@ -40,7 +38,7 @@ public sealed class DataFileTests : IDisposable
     {
         string chosen = _cloud.PathOf("Family.json");
 
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = chosen }, [_appData.FolderPath]);
 
         Assert.Equal([$"Data file not found: {chosen}"], book.Warnings);
         Assert.Empty(book.People);
@@ -53,7 +51,7 @@ public sealed class DataFileTests : IDisposable
     public void MissingFileIsLoadedOnceItAppears()
     {
         string chosen = _cloud.PathOf("Family.json");
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = chosen }, [_appData.FolderPath]);
 
         _cloud.Write("Family.json", TestFiles.People("""[{ "name": "Synced" }]"""));
 
@@ -70,7 +68,7 @@ public sealed class DataFileTests : IDisposable
     {
         string chosen = _cloud.Write("Family.json", "{ not json");
 
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = chosen }, [_appData.FolderPath]);
 
         Assert.StartsWith("Error loading data: ", Assert.Single(book.Warnings));
         Assert.Empty(book.People);
@@ -82,7 +80,7 @@ public sealed class DataFileTests : IDisposable
     public void FileChangedElsewhereIsReloaded()
     {
         string chosen = _cloud.Write("Family.json", TestFiles.People("""[{ "name": "Before" }]"""));
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = chosen }, [_appData.FolderPath]);
         Assert.False(book.HasDataFileChanged());
 
         ChangeElsewhere(chosen, TestFiles.People("""[{ "name": "After", "namedate": "06-24" }]"""));
@@ -97,9 +95,9 @@ public sealed class DataFileTests : IDisposable
     [Fact]
     public void ReloadClearsOldWarnings()
     {
-        TestFiles.WriteConfig(_appData, calendarFile: "Missing.Calendar.json");
+        _appData.Write(TestFiles.CalendarName, TestFiles.Calendar("""{ "13-45": "No such day" }"""));
         string chosen = _cloud.Write("Family.json", TestFiles.People("[]"));
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(TestFiles.Settings(dataFile: chosen), [_appData.FolderPath]);
         Assert.NotEmpty(book.Warnings);
 
         ChangeElsewhere(chosen, TestFiles.People("""[{ "name": "New" }]"""));
@@ -112,7 +110,7 @@ public sealed class DataFileTests : IDisposable
     public void SavingIsNotAChange()
     {
         string chosen = _cloud.Write("Family.json", TestFiles.People("""[{ "name": "Jan" }]"""));
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = chosen }, [_appData.FolderPath]);
 
         book.SavePeople([new Person { Name = "Jan" }, new Person { Name = "Eva" }], book.SavePathFor());
 
@@ -126,7 +124,7 @@ public sealed class DataFileTests : IDisposable
     {
         // A cloud app may remove a file for a moment while it replaces it.
         string chosen = _cloud.Write("Family.json", TestFiles.People("""[{ "name": "Jan" }]"""));
-        AnniversaryBook book = AnniversaryBook.Load(null, chosen, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = chosen }, [_appData.FolderPath]);
 
         File.Delete(chosen);
 
@@ -158,7 +156,7 @@ public sealed class DataFileTests : IDisposable
     {
         string current = _cloud.Write("Current.json", TestFiles.People("""[{ "name": "Jan" }]"""));
         string other = _cloud.Write("Other.json", content);
-        AnniversaryBook book = AnniversaryBook.Load(null, current, [_appData.FolderPath]);
+        AnniversaryBook book = AnniversaryBook.Load(new UserSettings { DataFile = current }, [_appData.FolderPath]);
 
         Assert.ThrowsAny<JsonException>(() => book.OpenDataFile(other));
         Assert.Equal(current, book.DataFilePath);
@@ -185,7 +183,7 @@ public sealed class DataFileTests : IDisposable
 
         Assert.Equal(cloudPath, book.DataFilePath);
         Assert.Equal(cloudPath, book.SavePathFor());
-        Assert.Equal("Jan", Assert.Single(AnniversaryBook.Load(null, cloudPath, [_appData.FolderPath]).People).Name);
+        Assert.Equal("Jan", Assert.Single(AnniversaryBook.Load(new UserSettings { DataFile = cloudPath }, [_appData.FolderPath]).People).Name);
     }
 
     [Fact]

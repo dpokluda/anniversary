@@ -93,13 +93,24 @@ Your people and settings are in the app's data folder:
 - macOS: `~/Library/Application Support/Anniversary`
 - Linux: `~/.config/Anniversary`
 
-`Anniversary.Data.json` holds your people (unless you chose another data file), and `usersettings.json` your theme,
-calendar and data file. For more settings, create `appsettings.json` there, for example to look 14 days ahead and hide
-the years:
+`Anniversary.Data.json` holds your people (unless you chose another data file), and `usersettings.json` all your
+settings. The app keeps the theme, calendar and data file there as you choose them in the menus. Two more settings
+are only in the file: `numberOfDaysAhead`, how many days "Next 7 days" covers, and `displayYearsOnBirthdays`, whether
+birthdays and anniversaries show the years. To change them, quit the app, edit the file in a text editor, and start
+the app again. For example, to look 14 days ahead and hide the years:
 
 ```json
-{ "numberOfDaysAhead": 14, "displayYearsOnBirthdays": false }
+{
+  "theme": "System",
+  "calendar": "Anniversary.Calendar.Czech.json",
+  "dataFile": null,
+  "numberOfDaysAhead": 14,
+  "displayYearsOnBirthdays": false
+}
 ```
+
+If the app can't read the file (for example after a typo), it says so when it starts, uses the default settings and
+leaves the file alone until you fix it.
 
 ## Removing it
 

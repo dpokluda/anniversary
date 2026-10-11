@@ -1,15 +1,18 @@
 # App icon
 
-The Anniversary icon: a refreshed version of the v4 tear-off calendar with the yellow binding, red "24", blue lines
-and stacked pages. It's drawn as vector shapes by `Build-Icon.ps1`, so every size is sharp. At small sizes the details
-that would turn into noise are dropped: from 40 px down the binding is shallower and the "24" is centred with white space around it, and at 16 px it is drawn as crisp pixels (a 3 × 5 pixel font).
+The Anniversary icon: a refreshed version of the v4 tear-off calendar with the yellow binding, red "24", blue lines and
+stacked pages, and a page taller than wide like v4's (180 × 210 on the 256 grid). It's drawn as vector shapes by
+`Build-Icon.ps1`, so every size is sharp. At small sizes the details that would turn into noise are dropped: from 40 px
+down the binding is shallower and the "24" is centred with white space around it, and at 16 px it is drawn as crisp
+pixels (a 3 × 5 pixel font).
 
 On macOS the calendar sits on a white rounded square (`New-MacIcon`): macOS 26 and later put any app icon that isn't a
 rounded square on a grey tile, which washed the calendar out. The square follows Apple's grid (824 px with 185 px
-corners, 100 px in from each edge of 1024), and the calendar takes 82% of the icon, drawn at its own size so small
-icons keep their simpler drawing. `App.icns` has no 1x 16 and 32 px images: macOS shows PNGs in those slots as noise
-and puts Apple's own ARGB format there on a grey tile, so it scales the larger images down instead (checked on macOS
-27). Windows and Linux keep the plain calendar.
+corners, 100 px in from each edge of 1024), and the calendar takes 74% of the icon (about 36 px from the square's edges
+to the rings and the shadow), drawn at its own size so small icons keep their simpler drawing; where that's the small
+layout (the 32 px image), it's drawn a little smaller, as its page fills more of its square. `App.icns` has no 1x 16 and
+32 px images: macOS shows PNGs in those slots as noise and puts Apple's own ARGB format there on a grey tile, so it
+scales the larger images down instead (checked on macOS 27). Windows and Linux keep the plain calendar.
 
 ```powershell
 pwsh -File Build-Icon.ps1                           # writes the files below

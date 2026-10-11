@@ -13,7 +13,7 @@ Linux.
 | Area | Status |
 |---|---|
 | Spec and plan | `specs/spec.md` (source of truth), `specs/plan.md`; mocks in `specs/screens/` (approximate, larger than the real app; the spec's sizes win) |
-| Code | `Anniversary.Shared` (all UI and logic), `Anniversary.Desktop` (exe and `StartAtLogin.cs`), `Anniversary.Tests` (203 tests; the 3 registry tests run only on Windows, so 200 pass and 3 skip elsewhere) |
+| Code | `Anniversary.Shared` (all UI and logic), `Anniversary.Desktop` (exe and `StartAtLogin.cs`), `Anniversary.Tests` (205 tests; the 3 registry tests run only on Windows, so 202 pass and 3 skip elsewhere) |
 | Windows | Verified: v4's size and native font sizes; light and dark |
 | macOS | Verified on Apple Silicon. Fonts, line spacing, margins and corners have macOS-specific values (spec 7.1; lessons below) |
 | Linux | Verified on Fedora. No Linux-specific values were needed: Linux uses the Windows look with a 13 px font |
@@ -43,8 +43,8 @@ macOS also has the commands in the menu bar (`NativeMenu`); Windows and Linux ig
 Data files are looked up next to the exe, then in the app-data folder (`%APPDATA%\Anniversary`,
 `~/Library/Application Support/Anniversary`, `~/.config/Anniversary`), then in built-in defaults. A data file chosen
 with Data File ▸ Open… or Save As… wins (spec 5.3). The built-in people list is empty; to see real data, open v4's
-`Anniversary.Data.json` with Data File ▸ Open…. The app writes only `usersettings.json` (theme, calendar and chosen
-data file), the data file (from the editor and Save As…) and, when asked, its Start at Login entry (spec 7.12).
+`Anniversary.Data.json` with Data File ▸ Open…. The app writes only `usersettings.json` (all settings,
+spec 5.5), the data file (from the editor and Save As…) and, when asked, its Start at Login entry (spec 7.12).
 
 ## Decisions already made (don't revisit without asking the user)
 
@@ -61,8 +61,13 @@ data file), the data file (from the editor and Save As…) and, when asked, its 
   - Menu text and separators are aligned; separators use a subtle gray.
   - The calendar drop-down is scaled down.
 - Years aren't shown when the date's year is after the displayed day (`9999` means "unknown year" in v4 data).
+- **One settings file, `usersettings.json`** (spec 5.5): the theme, calendar and data file chosen in the menus, plus
+  `numberOfDaysAhead` and `displayYearsOnBirthdays`, which stay file-only (the user chose that over menu items or a
+  settings window). v4's `appsettings.json` is no longer read (user decision: two files with overlapping keys confused
+  even the author). The app writes every key, creates the file at the first start, and never saves over a file it
+  couldn't read (it warns instead), so hand edits aren't lost.
 - **Calendars:** the default is the calendar whose `locale` region matches the OS region (`CultureInfo.CurrentCulture`,
-  e.g. Czech in Czechia), otherwise US; a menu choice or `calendarFile` wins (spec 5.7). The menu is called
+  e.g. Czech in Czechia), otherwise US; a menu choice wins (spec 5.7). The menu is called
   **Calendar** (renamed from Nameday Calendar); calendars without a locale come last, after a separator. Name days are
   never typed in by hand (pinned sources only); holiday entries are written in
   `Build-Calendars.ps1` with the law or tradition behind each one. Names on the same day are joined with ", ".
@@ -96,6 +101,9 @@ data file), the data file (from the editor and Save As…) and, when asked, its 
   without them it scales the larger images down cleanly. Avalonia ignores the window icon on macOS, so the Dock always
   shows the bundle's `App.icns`. To see an icon the way macOS draws it, render `NSWorkspace.shared.icon(forFile:)` for
   the `.app` (by absolute path) in a small Swift script, into a bitmap whose `size` in points sets the screen scale.
+  To try other icon proportions on a Mac (where `Build-Icon.ps1` can't run), port its drawing to CoreGraphics and take
+  the "24" from `App-1024.png` as a mask (Segoe UI isn't on macOS); such a port matched the Windows output to within
+  1/255 on average at 256 px, and was used to choose the taller page.
 - **Headless renders for comparing variants:** render the main window off-screen with `Avalonia.Headless` +
   `Avalonia.Skia` (`UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })`, then
   `RenderTargetBitmap` at 192 DPI). It uses the real system font manager, so it shows the same fonts as the app.
@@ -130,7 +138,7 @@ then:
 ```bash
 git clone https://github.com/dpokluda/anniversary.git && cd anniversary
 dotnet build Anniversary.slnx
-dotnet test --project Anniversary.Tests      # expect 203: 200 passed, 3 skipped (registry tests run only on Windows)
+dotnet test --project Anniversary.Tests      # expect 205: 202 passed, 3 skipped (registry tests run only on Windows)
 dotnet run --project Anniversary.Desktop
 ```
 
