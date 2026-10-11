@@ -812,9 +812,11 @@ Building macOS/Linux output on Windows is fine. Running and checking it needs th
 
 **User README** (`Anniversary.Desktop\README.md`, shipped as `README.md` in every archive and installer): the one
 document for people who use the app; the repository's README is for developers. Concise Markdown that also reads well as
-plain text, covering what the app does, starting it on each OS (including the first-launch steps for unsigned builds),
-using it (the window, commands and shortcuts), the people and sharing them (7.11), the calendars, the data folder and
-`appsettings.json`, removing the app, and the license. Every change users can see updates it.
+plain text, covering what the app does, starting it on each OS, opening it the first time (numbered steps through the
+macOS and Windows warnings for unsigned builds, naming the buttons as the OS shows them), using it (the window, commands
+and shortcuts), the people and sharing them (7.11), the calendars, the data folder and `appsettings.json`, removing the
+app, and the license. Every change users can see updates it. The repository README repeats the first-start steps
+briefly and links to them.
 
 **Packages** (`packaging\Build-Package.ps1 -Rid <rid>`, PowerShell 7, run on the RID's own OS after publishing to
 `publish\<rid>`; output in `packages\`). Besides the plain archives, each platform gets a package for people who just
@@ -827,8 +829,9 @@ want to install the app:
 | `linux-x64`, `linux-arm64` | `Anniversary-{version}-{rid}.AppImage` (an AppImage rather than an RPM: user decision) | One portable file with nothing to install: `AppRun` (`packaging\linux\AppRun`), `anniversary.desktop`, the 256 px icon (`Anniversary.Shared\Assets\App.png`), `usr/bin/Anniversary` and the README and notices in `usr/share/doc/anniversary`. Built with appimagetool 1.9.1 and the AppImage type2 runtime 20251108 (static, needs no libfuse2), both downloaded at pinned versions and checked by SHA-256. |
 
 - **Signing:** none beyond the macOS ad-hoc signature, so the first start needs Windows SmartScreen's *More info ▸ Run
-  anyway* or macOS's *System Settings ▸ Privacy & Security ▸ Open Anyway*; the user README explains both. Developer ID
-  signing with notarization, and a Windows code-signing certificate, would remove these steps (not decided).
+  anyway* (after the browser's *Keep* for a file that isn't commonly downloaded) or macOS's *Done*, then *System
+  Settings ▸ Privacy & Security ▸ Open Anyway*; the user README's "Opening it the first time" explains both. Developer
+  ID signing with notarization, and a Windows code-signing certificate, would remove these steps (not decided).
 - Inside the `.app` and the AppImage, the folder next to the executable (5.3) is read-only and holds no data files;
   users keep theirs in the app-data folder.
 - macOS packages are built on macOS (`codesign`, `hdiutil`), Windows installers on Windows (Inno Setup, preinstalled on

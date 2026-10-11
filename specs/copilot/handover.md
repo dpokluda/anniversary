@@ -90,9 +90,11 @@ data file) and the data file (from the editor and Save As…).
 - **Window corners:** large rounded window corners crowd the bottom buttons at an 8 px margin (`AppWindowMargin`).
 - **App icon shape:** macOS 26 and later shrink any app icon that isn't a rounded square onto a grey tile, so
   `App.icns` is the calendar on a white rounded square of its own (Apple's grid: 824 px, 185 px corners, 100 px in from
-  each edge of 1024); checked on macOS 27. Avalonia ignores the window icon on macOS, so the Dock always shows the
-  bundle's `App.icns`. To see an icon the way macOS draws it, render `NSWorkspace.shared.icon(forFile:)` for the `.app`
-  (by absolute path) in a small Swift script.
+  each edge of 1024); checked on macOS 27. It has no 1x 16 and 32 px images: macOS reads PNGs in those slots
+  (`icp4`, `icp5`) as noise and puts Apple's ARGB ones (`ic04`, `ic05`, what `iconutil` writes) on a grey tile, while
+  without them it scales the larger images down cleanly. Avalonia ignores the window icon on macOS, so the Dock always
+  shows the bundle's `App.icns`. To see an icon the way macOS draws it, render `NSWorkspace.shared.icon(forFile:)` for
+  the `.app` (by absolute path) in a small Swift script, into a bitmap whose `size` in points sets the screen scale.
 - **Headless renders for comparing variants:** render the main window off-screen with `Avalonia.Headless` +
   `Avalonia.Skia` (`UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })`, then
   `RenderTargetBitmap` at 192 DPI). It uses the real system font manager, so it shows the same fonts as the app.

@@ -66,12 +66,25 @@ and `Anniversary-{rid}.tar.gz` for macOS and Linux. Each archive holds a `{rid}`
 `README.md` and `THIRD-PARTY-NOTICES.md`. The `.tar.gz` keeps the executable flag, so
 `tar -xzf Anniversary-linux-x64.tar.gz` gives a folder that's ready to run.
 
+### Opening it the first time
+
+The builds aren't signed by Microsoft or Apple (the macOS app is only ad-hoc signed), so the first start needs one
+approval. The user guide has the steps for people using the app
+([Opening it the first time](Anniversary.Desktop/README.md#opening-it-the-first-time)):
+
+- **macOS:** open the app and click **Done** on "Anniversary.app" Not Opened. Then in **System Settings ▸ Privacy &
+  Security**, under **Security**, click **Open Anyway** (**Open** on some versions) next to the message that it was
+  blocked, and confirm with **Open Anyway** and your password. The button is there for about an hour after the
+  blocked start. Or run `xattr -dr com.apple.quarantine /Applications/Anniversary.app`.
+- **Windows:** if the browser says the file isn't commonly downloaded, keep it (Edge: **⋯ ▸ Keep ▸ Show more ▸ Keep
+  anyway**). On "Windows protected your PC", click **More info**, then **Run anyway**.
+- **Linux:** nothing asks; the AppImage only has to be executable.
+
 ### Running on macOS
 
 Use `osx-arm64` for Apple Silicon (M1 and newer) and `osx-x64` for Intel Macs. The `.dmg` holds `Anniversary.app`,
-ad-hoc signed but not notarized: drag it to Applications, and the first start needs **System Settings ▸ Privacy &
-Security ▸ Open Anyway** (or `xattr -dr com.apple.quarantine /Applications/Anniversary.app`). To run a published folder
-or an extracted archive instead, in Terminal:
+ad-hoc signed but not notarized: drag it to Applications; the first start needs one approval (above). To run a
+published folder or an extracted archive instead, in Terminal:
 
 ```bash
 cd path/to/osx-arm64

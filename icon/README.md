@@ -7,7 +7,9 @@ that would turn into noise are dropped: from 40 px down the binding is shallower
 On macOS the calendar sits on a white rounded square (`New-MacIcon`): macOS 26 and later put any app icon that isn't a
 rounded square on a grey tile, which washed the calendar out. The square follows Apple's grid (824 px with 185 px
 corners, 100 px in from each edge of 1024), and the calendar takes 82% of the icon, drawn at its own size so small
-icons keep their simpler drawing. Windows and Linux keep the plain calendar.
+icons keep their simpler drawing. `App.icns` has no 1x 16 and 32 px images: macOS shows PNGs in those slots as noise
+and puts Apple's own ARGB format there on a grey tile, so it scales the larger images down instead (checked on macOS
+27). Windows and Linux keep the plain calendar.
 
 ```powershell
 pwsh -File Build-Icon.ps1                           # writes the files below
@@ -20,7 +22,7 @@ Requires Windows (it uses System.Drawing). Edit the drawing code in the script a
 |---|---|---|
 | `../Anniversary.Shared/Assets/App.ico` | 16, 20, 24, 32, 40, 48, 64, 256 px, 32-bit colour | exe icon (Windows), window icons, Windows installer |
 | `../Anniversary.Shared/Assets/App.png` | 256 px | About dialog, Linux AppImage |
-| `App.icns` | 16–1024 px, including Retina @2x | macOS `.app` bundle (`packaging/Build-Package.ps1`): the calendar on a white rounded square |
+| `App.icns` | 32–1024 px: 128–512 pt, and 16–512 pt at Retina @2x | macOS `.app` bundle (`packaging/Build-Package.ps1`): the calendar on a white rounded square |
 | `App-1024.png` | 1024 px | master image: Linux desktop entries, store listings |
 
 

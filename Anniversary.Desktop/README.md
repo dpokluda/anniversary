@@ -7,21 +7,43 @@ day, together with the day's names or holidays from a calendar you choose. It ru
 
 Each download comes in two forms: a package that installs the app (a Windows setup, a macOS `.dmg` or a Linux
 AppImage), or a plain archive (`.zip` or `.tar.gz`) with the single-file app in a folder you keep wherever you like.
+The first time, Windows and macOS warn you about the app; "Opening it the first time" below shows what to click.
 
 - **Windows:** run `Anniversary-…-win-x64-setup.exe` (`win-arm64` for Windows on Arm). It installs the app just for
-  you, without admin rights, adds it to the Start menu and starts it. The app isn't signed, so Windows may first say
-  "Windows protected your PC": click **More info**, then **Run anyway**. From the `.zip`, extract it and double-click
-  `Anniversary.exe` instead (the same warning may appear).
-- **macOS:** use `osx-arm64` on Apple Silicon Macs (M1 and newer) and `osx-x64` on Intel Macs. Open the `.dmg` and drag
-  Anniversary onto Applications. The app isn't signed by Apple, so macOS blocks it the first time you start it: close
-  the warning, open **System Settings ▸ Privacy & Security**, click **Open Anyway** next to the message about
-  Anniversary, and start it again. The `.tar.gz` holds the bare app instead: double-click `Anniversary` (the same
-  first-time steps apply) and leave the Terminal window that opens with it; or, in Terminal in its folder, run
-  `xattr -d com.apple.quarantine Anniversary` once, then `./Anniversary`.
-- **Linux:** the `.AppImage` is the whole app in one file. Make it executable (in its file properties, or with
-  `chmod +x Anniversary-*.AppImage`), then double-click it; tools such as Gear Lever add it to the applications menu.
-  From the `.tar.gz`, run `./Anniversary` in the extracted folder. The app needs fontconfig, libX11, libICE and libSM,
-  which desktop distributions already have.
+  you, without admin rights, adds it to the Start menu and starts it. From the `.zip`, extract it and double-click
+  `Anniversary.exe` instead.
+- **macOS:** use `osx-arm64` on Apple Silicon Macs (M1 and newer) and `osx-x64` on Intel Macs. Open the `.dmg`, drag
+  Anniversary onto Applications and start it from there. The `.tar.gz` holds the bare app instead: double-click
+  `Anniversary` and leave the Terminal window that opens with it.
+- **Linux:** the `.AppImage` is the whole app in one file. Make it executable (right-click it, **Properties**, turn on
+  **Executable as Program**, or run `chmod +x Anniversary-*.AppImage`), then double-click it; tools such as Gear Lever
+  add it to the applications menu. From the `.tar.gz`, run `./Anniversary` in the extracted folder. The app needs
+  fontconfig, libX11, libICE and libSM, which desktop distributions already have.
+
+## Opening it the first time
+
+Anniversary isn't signed by Microsoft or Apple (that needs a paid certificate), so the first time you open it, Windows
+or macOS warns you that it can't check the app. Allow it once as below; after that it opens normally. A new version
+may need this again.
+
+**On macOS:**
+
+1. Open Anniversary. When macOS says "Anniversary.app" Not Opened, click **Done** (not Move to Trash).
+2. Open **System Settings ▸ Privacy & Security** and scroll down to **Security**. Next to the message that Anniversary
+   was blocked, click **Open Anyway** (**Open** on some macOS versions). The button is there for about an hour after
+   step 1; if it's gone, open Anniversary again.
+3. Confirm with **Open Anyway** and your password or Touch ID.
+
+In Terminal, `xattr -dr com.apple.quarantine /Applications/Anniversary.app` does the same in one step (for the
+`.tar.gz`, run `xattr -d com.apple.quarantine Anniversary` in its folder).
+
+**On Windows:**
+
+1. Your browser may say the file isn't commonly downloaded. Keep it; in Edge, choose **⋯ ▸ Keep ▸ Show more ▸ Keep
+   anyway**.
+2. When you run it, Windows may say "Windows protected your PC". Click **More info**, then **Run anyway**.
+
+**On Linux** nothing asks; the AppImage only has to be executable (see above).
 
 ## Using it
 

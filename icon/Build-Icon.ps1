@@ -10,7 +10,7 @@
     Outputs:
       ..\Anniversary.Shared\Assets\App.ico   Windows: 16, 20, 24, 32, 40, 48, 64, 256 px (32-bit, 256 px PNG-compressed)
       ..\Anniversary.Shared\Assets\App.png   256 px, used by the About dialog
-      App.icns                               macOS .app: the calendar on a white rounded square, 16-1024 px incl. @2x
+      App.icns                               macOS .app: the calendar on a white rounded square, 32-1024 px incl. @2x
       App-1024.png                           master image (Linux, store listings)
 
     Requires Windows (System.Drawing / GDI+). Re-run after changing the drawing code.
@@ -228,14 +228,10 @@ function New-MacIcon([int] $size)
     $g.FillPath((New-VerticalGradient 100 924 (Rgb 255 255 255) (Rgb 0xEE 0xF0 0xF4)), $tile)
     $g.ResetTransform()
 
-    # The calendar is drawn at its own size, so it keeps that size's details, at 82% of the icon (the small layout's
-    # page fills more of its square, so it's drawn smaller to match). An even size keeps it on whole pixels. Row 132.5
-    # of its 256 grid goes to the middle: a little below the middle of its outline, as the thin rings weigh little.
+    # The calendar is drawn at its own size, so it keeps that size's details, at 82% of the icon. An even size keeps it
+    # on whole pixels. Row 132.5 of its 256 grid goes to the middle: a little below the middle of its outline, as the
+    # thin rings weigh little.
     $inner = 2 * [Math]::Round($size * 0.82 / 2)
-    if ($inner -le 24)
-    {
-        $inner = 2 * [Math]::Round($inner * 196 / 240 / 2)
-    }
     $x = ($size - $inner) / 2
     $y = [Math]::Round($size / 2 - $inner * 132.5 / 256)
     $calendar = New-Icon $inner
@@ -307,8 +303,10 @@ function Write-Ico([string] $path, [int[]] $sizes)
 
 function Write-Icns([string] $path)
 {
-    # Big-endian container of PNG images: 4-char type + length (including the 8-byte header) + data.
-    $entries = [ordered]@{ icp4 = 16; icp5 = 32; icp6 = 64; ic07 = 128; ic08 = 256; ic09 = 512; ic10 = 1024; ic11 = 32; ic12 = 64; ic13 = 256; ic14 = 512 }
+    # Big-endian container of PNG images: 4-char type + length (including the 8-byte header) + data. ic11-ic14 are the
+    # @2x sizes. There are no 1x 16 and 32 px images: macOS reads PNGs in those slots (icp4, icp5) as noise and puts
+    # its own ARGB ones (ic04, ic05) on a grey tile, so it scales the larger images down instead.
+    $entries = [ordered]@{ ic07 = 128; ic08 = 256; ic09 = 512; ic10 = 1024; ic11 = 32; ic12 = 64; ic13 = 256; ic14 = 512 }
     $body = [System.IO.MemoryStream]::new()
     foreach ($type in $entries.Keys)
     {
@@ -340,7 +338,7 @@ if ($PreviewFolder)
         $bitmap.Save((Join-Path $PreviewFolder "App-$s.png"), [System.Drawing.Imaging.ImageFormat]::Png)
         $bitmap.Dispose()
     }
-    foreach ($s in 16, 32, 64, 128, 256, 512)
+    foreach ($s in 32, 64, 128, 256, 512)
     {
         $bitmap = New-MacIcon $s
         $bitmap.Save((Join-Path $PreviewFolder "App-mac-$s.png"), [System.Drawing.Imaging.ImageFormat]::Png)
