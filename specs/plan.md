@@ -111,13 +111,14 @@ Next (the user's plan, in this order):
 2. **packages** ✅ – besides the `.zip` and `.tar.gz`, built by `packaging/Build-Package.ps1` on each RID's own OS
    and attached by CI (spec 10): a macOS `.dmg` with an ad-hoc signed `Anniversary.app` (Apple Silicon and Intel;
    built and started on macOS), a Linux **AppImage** (user decision over an RPM: one file that runs on Fedora and other
-   distributions, nothing to install) and an Inno Setup installer for Windows (per user, x64 and arm64). The installer
-   and the AppImages are first built by CI; they still need a check on Windows and Fedora (acceptance criterion 15).
+   distributions, nothing to install) and an Inno Setup installer for Windows (per user, x64 and arm64). Checked by
+   the user on Windows, macOS (Apple Silicon) and Fedora (acceptance criterion 15); the ARM and Intel-Mac builds
+   haven't been run on matching machines.
 3. **start-at-login** ✅ – **⋯ ▸ Start at Login** (macOS: **Open at Login**, also in the app menu), a check item in
    the app rather than an installer option (user decision), for the copy that's running: the Run key on Windows (chosen
    over a Startup-folder shortcut), Apple's login-item API on macOS (`SMAppService`, tested with the ad-hoc
-   signed app on macOS 27), XDG autostart on Linux; the Windows uninstaller removes the Run value (spec 7.12). Still
-   to check by hand on Windows and Fedora (acceptance criterion 16).
+   signed app on macOS 27), XDG autostart on Linux; the Windows uninstaller removes the Run value (spec 7.12). Checked
+   by the user on Windows, macOS and Fedora (acceptance criterion 16).
 4. **releases** – GitHub Releases from a version tag (5.1.0), with all packages and archives.
 
 Signing (Apple Developer ID, a Windows code-signing certificate) isn't decided; unsigned builds need the first-launch
