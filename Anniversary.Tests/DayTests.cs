@@ -94,6 +94,24 @@ public sealed class DayTests : IDisposable
     }
 
     [Fact]
+    public void NextDaysStopOnLastDayOfYear9999()
+    {
+        // 31 December 9999 is the last day DateOnly can hold; the 01-01 entries would be in year 10000.
+        AnniversaryBook book = TestFiles.Book(_folder,
+            people: """[{ "name": "Silvestr", "namedate": "12-31" }, { "name": "Nový", "namedate": "01-01" }]""",
+            calendar: """{ "12-30": "David", "12-31": "Silvestr", "01-01": "Nový rok" }""");
+
+        DayInfo day = book.GetDay(new DateOnly(9999, 12, 29));
+        DayInfo lastDay = book.GetDay(new DateOnly(9999, 12, 31));
+
+        Assert.Equal(["Silvestr"], day.NextDaysPeople);
+        Assert.Equal(["David", "Silvestr"], day.NextDaysNames);
+        Assert.Equal("Silvestr", lastDay.CalendarNames);
+        Assert.Empty(lastDay.NextDaysPeople);
+        Assert.Empty(lastDay.NextDaysNames);
+    }
+
+    [Fact]
     public void UnknownYearShowsNoYears()
     {
         // v4 data uses 9999 for an unknown year; browsing to a year before an event behaves the same.

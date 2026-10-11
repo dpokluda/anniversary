@@ -1,7 +1,7 @@
 {
   "name": "Czechia (Česko)",
   "locale": "cs-CZ",
-  "source": "Anniversary v4 (Anniversary.Calendar.Czech.json)",
+  "source": "Anniversary v4 (Anniversary.Calendar.Czech.json), plus Velký pátek and Velikonoční pondělí (zákon č. 245/2000 Sb., § 2)",
   "license": "MIT, Copyright (c) David Pokluda (part of Anniversary; see LICENSE)",
   "calendar": {
     "01-01": "Nový rok",
@@ -369,6 +369,8 @@
     "12-28": "Bohumila",
     "12-29": "Judita",
     "12-30": "David",
-    "12-31": "Silvestr"
+    "12-31": "Silvestr",
+    "easter+1": "Velikonoční pondělí",
+    "easter-2": "Velký pátek"
   }
 }

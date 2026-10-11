@@ -6,9 +6,10 @@ namespace Anniversary.Model;
 public class AppConfig
 {
     /// <summary>
-    /// Gets or sets the name (or absolute path) of the name-day calendar file.
+    /// Gets or sets the name (or absolute path) of the calendar file (name days or holidays), or <c>null</c> to choose
+    /// it by the OS region (spec 5.7).
     /// </summary>
-    public string CalendarFile { get; set; } = "Anniversary.Calendar.Czech.json";
+    public string? CalendarFile { get; set; }
 
     /// <summary>
     /// Gets or sets the name (or absolute path) of the people data file.

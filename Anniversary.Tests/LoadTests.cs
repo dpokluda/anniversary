@@ -45,10 +45,11 @@ public sealed class LoadTests : IDisposable
     [Fact]
     public void FallsBackToBuiltInDefaults()
     {
-        AnniversaryBook book = AnniversaryBook.Load(null);
+        AnniversaryBook book = TestFiles.LoadInCulture("en-US", null);
 
-        Assert.Equal("Anniversary.Calendar.Czech.json", book.Config.CalendarFile);
-        Assert.Equal("Štefan/Sára", book.GetDay(new DateOnly(2026, 10, 9)).CalendarNames);
+        Assert.Null(book.Config.CalendarFile);
+        Assert.Equal("Anniversary.Calendar.US.json", book.CalendarFile);
+        Assert.Equal("Independence Day", book.GetDay(new DateOnly(2026, 7, 4)).CalendarNames);
         Assert.Empty(book.People);
         Assert.Null(book.DataFilePath);
         Assert.Empty(book.Warnings);
@@ -107,11 +108,11 @@ public sealed class LoadTests : IDisposable
     {
         _exe.Write("appsettings.json", "{ \"numberOfDaysAhead\": \"many\" }");
 
-        AnniversaryBook book = AnniversaryBook.Load(null, _exe.FolderPath);
+        AnniversaryBook book = TestFiles.LoadInCulture("en-US", null, _exe.FolderPath);
 
         Assert.StartsWith(AnniversaryBook.ConfigurationWarningPrefix, Assert.Single(book.Warnings));
         Assert.Equal(7, book.Config.NumberOfDaysAhead);
-        Assert.Equal("Štefan/Sára", book.GetDay(new DateOnly(2026, 10, 9)).CalendarNames);
+        Assert.Equal("Independence Day", book.GetDay(new DateOnly(2026, 7, 4)).CalendarNames);
     }
 
     [Fact]

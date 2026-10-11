@@ -56,8 +56,8 @@ public partial class MainWindow : Window
         // so they are found by their header and wired here.
         NativeMenu menuBar = NativeMenu.GetMenu(this)!;
         NativeItem(menuBar, "File", "Edit People…").Click += (_, _) => EditPeople();
-        NativeItem(menuBar, "Go", "Yesterday").Click += (_, _) => ShowDay(_day.AddDays(-1));
-        NativeItem(menuBar, "Go", "Tomorrow").Click += (_, _) => ShowDay(_day.AddDays(1));
+        NativeItem(menuBar, "Go", "Yesterday").Click += (_, _) => ShowPreviousDay();
+        NativeItem(menuBar, "Go", "Tomorrow").Click += (_, _) => ShowNextDay();
         NativeItem(menuBar, "Go", "Today").Click += (_, _) => ShowToday();
         NativeItem(menuBar, "Go", "Change Date…").Click += (_, _) => ChangeDate();
         NativeItem(menuBar, "Find", "Find…").Click += (_, _) => Find();
@@ -155,6 +155,23 @@ public partial class MainWindow : Window
         ShowDay(DateOnly.FromDateTime(DateTime.Today));
     }
 
+    // Yesterday and Tomorrow do nothing at the ends of DateOnly's range: 1 January 0001 and 31 December 9999.
+    private void ShowPreviousDay()
+    {
+        if (_day > DateOnly.MinValue)
+        {
+            ShowDay(_day.AddDays(-1));
+        }
+    }
+
+    private void ShowNextDay()
+    {
+        if (_day < DateOnly.MaxValue)
+        {
+            ShowDay(_day.AddDays(1));
+        }
+    }
+
     private async void ChangeDate()
     {
         var dialog = new ChangeDateDialog { SelectedDate = _day };
@@ -194,11 +211,12 @@ public partial class MainWindow : Window
         }
         else
         {
-            await PerformFind(_day.AddDays(1));
+            // No day follows 31 December 9999, so there is nothing to search.
+            await PerformFind(_day < DateOnly.MaxValue ? _day.AddDays(1) : null);
         }
     }
 
-    private async Task PerformFind(DateOnly from)
+    private async Task PerformFind(DateOnly? from)
     {
         if (string.IsNullOrWhiteSpace(_findName))
         {
@@ -206,7 +224,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_book.Find(_findName, from, _findWholeWords, _findCalendarOnly) is DateOnly found)
+        if (from is DateOnly start && _book.Find(_findName, start, _findWholeWords, _findCalendarOnly) is DateOnly found)
         {
             ShowDay(found);
         }
@@ -286,12 +304,12 @@ public partial class MainWindow : Window
 
     private void OnYesterday(object? sender, RoutedEventArgs e)
     {
-        ShowDay(_day.AddDays(-1));
+        ShowPreviousDay();
     }
 
     private void OnTomorrow(object? sender, RoutedEventArgs e)
     {
-        ShowDay(_day.AddDays(1));
+        ShowNextDay();
     }
 
     private void OnToday(object? sender, RoutedEventArgs e)

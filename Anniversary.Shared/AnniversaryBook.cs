@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Anniversary.Model;
 
 namespace Anniversary;
@@ -27,8 +28,18 @@ public sealed class AnniversaryBook
 
     private const string CalendarFilePrefix = "Anniversary.Calendar.";
     private const string CalendarFileSuffix = ".json";
+    private const string FallbackCalendarFile = "Anniversary.Calendar.US.json";
+    private const int MaxReportedKeys = 5;
 
     private static readonly char[] WordDelimiters = [' ', ',', ';', '\t', '/', '-'];
+
+    // Rule keys for floating dates (spec 5.1): "11-Thu-4", "05-Mon-last" or "easter", optionally followed by "+n"/"-n".
+    private static readonly Regex RuleKeyPattern = new(
+        "^(?:(?<month>0[1-9]|1[0-2])-(?<weekday>mon|tue|wed|thu|fri|sat|sun)-(?<nth>[1-4]|last)|easter)(?<offset>[+-][1-9][0-9]?)?$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // Indexed by DayOfWeek.
+    private static readonly string[] WeekdayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
     private static readonly JsonSerializerOptions ReadOptions = new()
     {
@@ -49,6 +60,7 @@ public sealed class AnniversaryBook
     private readonly List<string> _warnings = new();
     private readonly Dictionary<string, List<Person>> _peopleByDate = new();
     private Dictionary<string, string> _calendar = new();
+    private List<(Match Rule, string Names)> _calendarRules = new();
     private List<Person> _people = new();
     private List<CalendarInfo> _calendars = new();
 
@@ -96,7 +108,10 @@ public sealed class AnniversaryBook
     /// <summary>
     /// Loads the configuration, the name-day calendar and the people.
     /// </summary>
-    /// <param name="preferredCalendar">The calendar chosen by the user, or <c>null</c> to use the configured one.</param>
+    /// <param name="preferredCalendar">
+    /// The calendar chosen by the user, or <c>null</c> to use the configured one. When none is configured, the calendar
+    /// for the region of <see cref="CultureInfo.CurrentCulture"/> is used, otherwise the US one (spec 5.7).
+    /// </param>
     /// <param name="folders">The folders to look in, in order of precedence; the last one is the user app-data folder.</param>
     /// <returns>The loaded book. Problems are reported in <see cref="Warnings"/>.</returns>
     public static AnniversaryBook Load(string? preferredCalendar, params string[] folders)
@@ -105,10 +120,18 @@ public sealed class AnniversaryBook
         book.LoadConfig();
         book.RefreshCalendars();
 
-        string calendar = book.Config.CalendarFile;
+        string calendar;
         if (preferredCalendar != null && book._calendars.Any(c => IsSameFile(c.FileName, preferredCalendar)))
         {
             calendar = preferredCalendar;
+        }
+        else if (!string.IsNullOrWhiteSpace(book.Config.CalendarFile))
+        {
+            calendar = book.Config.CalendarFile;
+        }
+        else
+        {
+            calendar = book.CalendarForRegion(CultureInfo.CurrentCulture);
         }
         book.LoadCalendar(calendar);
         book.LoadPeople();
@@ -171,18 +194,19 @@ public sealed class AnniversaryBook
 
         var nextPeople = new List<string>();
         var nextNames = new List<string>();
-        for (int i = 1; i <= Config.NumberOfDaysAhead; i++)
-        {
-            string nextKey = ToKey(day.AddDays(i));
 
-            if (_calendar.TryGetValue(nextKey, out string? names))
+        // The days after 31 December 9999, the last day DateOnly can hold, don't exist.
+        int daysAhead = Math.Min(Config.NumberOfDaysAhead, DateOnly.MaxValue.DayNumber - day.DayNumber);
+        for (int i = 1; i <= daysAhead; i++)
+        {
+            DateOnly next = day.AddDays(i);
+            string nextKey = ToKey(next);
+
+            foreach (string name in CalendarNamesOn(next).Split(',').Select(n => n.Trim()))
             {
-                foreach (string name in names.Split(',').Select(n => n.Trim()))
+                if (name.Length > 0 && !nextNames.Contains(name))
                 {
-                    if (name.Length > 0 && !nextNames.Contains(name))
-                    {
-                        nextNames.Add(name);
-                    }
+                    nextNames.Add(name);
                 }
             }
 
@@ -195,12 +219,13 @@ public sealed class AnniversaryBook
             }
         }
 
-        return new DayInfo(_calendar.GetValueOrDefault(key) ?? string.Empty, namedays, birthdays, nextPeople, nextNames);
+        return new DayInfo(CalendarNamesOn(day), namedays, birthdays, nextPeople, nextNames);
     }
 
     /// <summary>
     /// Finds the first day, starting at <paramref name="from"/>, whose calendar names or people match the name.
-    /// The search ends on 31 December of the following year.
+    /// The search ends on 31 December of the following year, or on 31 December 9999, the last day
+    /// <see cref="DateOnly"/> can hold.
     /// </summary>
     /// <param name="name">The name to search for.</param>
     /// <param name="from">The first day to check.</param>
@@ -214,11 +239,14 @@ public sealed class AnniversaryBook
             return null;
         }
 
-        var end = new DateOnly(from.Year + 1, 12, 31);
-        for (DateOnly day = from; day <= end; day = day.AddDays(1))
+        DateOnly end = from.Year < DateOnly.MaxValue.Year ? new DateOnly(from.Year + 1, 12, 31) : DateOnly.MaxValue;
+
+        // Counting day numbers, unlike AddDays, can step past 31 December 9999 to end the loop.
+        for (int dayNumber = from.DayNumber; dayNumber <= end.DayNumber; dayNumber++)
         {
+            DateOnly day = DateOnly.FromDayNumber(dayNumber);
             string key = ToKey(day);
-            if (_calendar.TryGetValue(key, out string? names) && Matches(names, name, wholeWordsOnly))
+            if (Matches(CalendarNamesOn(day), name, wholeWordsOnly))
             {
                 return day;
             }
@@ -342,6 +370,7 @@ public sealed class AnniversaryBook
     private void LoadCalendar(string fileName)
     {
         _calendar = new Dictionary<string, string>();
+        _calendarRules = new List<(Match Rule, string Names)>();
         CalendarData? data = null;
         try
         {
@@ -353,7 +382,7 @@ public sealed class AnniversaryBook
             else
             {
                 data = JsonSerializer.Deserialize<CalendarData>(json, ReadOptions);
-                _calendar = data?.Data ?? new Dictionary<string, string>();
+                AddCalendarEntries(fileName, data?.Data ?? new Dictionary<string, string>());
             }
         }
         catch (Exception ex) when (IsLoadException(ex))
@@ -363,6 +392,120 @@ public sealed class AnniversaryBook
 
         CalendarFile = fileName;
         AddActiveCalendarIfMissing(data);
+    }
+
+    private void AddCalendarEntries(string fileName, Dictionary<string, string> entries)
+    {
+        var unknownKeys = new List<string>();
+        foreach (KeyValuePair<string, string> entry in entries)
+        {
+            if (entry.Key.Length > 0 && IsValidNameday(entry.Key))
+            {
+                _calendar[entry.Key] = entry.Value;
+            }
+            else if (RuleKeyPattern.Match(entry.Key) is { Success: true } rule)
+            {
+                _calendarRules.Add((rule, entry.Value));
+            }
+            else
+            {
+                unknownKeys.Add(entry.Key);
+            }
+        }
+
+        if (unknownKeys.Count > 0)
+        {
+            string more = unknownKeys.Count > MaxReportedKeys ? $" and {unknownKeys.Count - MaxReportedKeys} more" : string.Empty;
+            _warnings.Add($"Unknown dates in {fileName}: {string.Join(", ", unknownKeys.Take(MaxReportedKeys))}{more}");
+        }
+    }
+
+    // The day's MM-dd entry, then the rules that fall on the day, in file order (spec 6.3).
+    private string CalendarNamesOn(DateOnly day)
+    {
+        var names = new List<string>();
+        if (_calendar.TryGetValue(ToKey(day), out string? dayNames) && !string.IsNullOrEmpty(dayNames))
+        {
+            names.Add(dayNames);
+        }
+
+        foreach ((Match rule, string ruleNames) in _calendarRules)
+        {
+            // An offset can move a rule's date into the previous or next year.
+            bool fallsOnDay = Enumerable.Range(day.Year - 1, 3)
+                .Any(year => TryResolveRule(rule, year, out DateOnly date) && date == day);
+            if (fallsOnDay && !string.IsNullOrEmpty(ruleNames))
+            {
+                names.Add(ruleNames);
+            }
+        }
+
+        return string.Join(", ", names);
+    }
+
+    // The date of a parsed rule key (spec 5.1) in the year; false if it falls outside DateOnly's range.
+    private static bool TryResolveRule(Match rule, int year, out DateOnly date)
+    {
+        date = default;
+        if (year < DateOnly.MinValue.Year || year > DateOnly.MaxValue.Year)
+        {
+            return false;
+        }
+
+        DateOnly ruleDate;
+        if (!rule.Groups["month"].Success)
+        {
+            ruleDate = EasterSunday(year);
+        }
+        else
+        {
+            int month = int.Parse(rule.Groups["month"].Value, CultureInfo.InvariantCulture);
+            var weekday = (DayOfWeek)Array.IndexOf(WeekdayNames, rule.Groups["weekday"].Value.ToLowerInvariant());
+            string nth = rule.Groups["nth"].Value;
+            if (nth.Equals("last", StringComparison.OrdinalIgnoreCase))
+            {
+                var lastDay = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+                ruleDate = lastDay.AddDays(-(((int)lastDay.DayOfWeek - (int)weekday + 7) % 7));
+            }
+            else
+            {
+                var firstDay = new DateOnly(year, month, 1);
+                int toWeekday = ((int)weekday - (int)firstDay.DayOfWeek + 7) % 7;
+                ruleDate = firstDay.AddDays(toWeekday + 7 * (int.Parse(nth, CultureInfo.InvariantCulture) - 1));
+            }
+        }
+
+        int dayNumber = ruleDate.DayNumber;
+        if (rule.Groups["offset"].Success)
+        {
+            dayNumber += int.Parse(rule.Groups["offset"].Value, CultureInfo.InvariantCulture);
+        }
+        if (dayNumber < DateOnly.MinValue.DayNumber || dayNumber > DateOnly.MaxValue.DayNumber)
+        {
+            return false;
+        }
+
+        date = DateOnly.FromDayNumber(dayNumber);
+        return true;
+    }
+
+    // Western Easter by the anonymous Gregorian algorithm (Meeus, Jones and Butcher).
+    private static DateOnly EasterSunday(int year)
+    {
+        int a = year % 19;
+        int b = year / 100;
+        int c = year % 100;
+        int d = b / 4;
+        int e = b % 4;
+        int f = (b + 8) / 25;
+        int g = (b - f + 1) / 3;
+        int h = (19 * a + b - d - g + 15) % 30;
+        int i = c / 4;
+        int k = c % 4;
+        int l = (32 + 2 * e + 2 * i - h - k) % 7;
+        int m = (a + 11 * h + 22 * l) / 451;
+        int monthAndDay = h + l - 7 * m + 114;
+        return new DateOnly(year, monthAndDay / 31, monthAndDay % 31 + 1);
     }
 
     private void LoadPeople()
@@ -437,6 +580,33 @@ public sealed class AnniversaryBook
             _calendars.Add(new CalendarInfo(CalendarFile, data?.Name ?? DisplayNameFromFile(CalendarFile), data?.Locale));
         }
         _calendars.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCulture));
+    }
+
+    // The first calendar (by display name) whose locale has the culture's region, e.g. "en-CZ" -> CZ -> Czech;
+    // otherwise the US one (spec 5.7).
+    private string CalendarForRegion(CultureInfo culture)
+    {
+        string? region = RegionOf(culture.Name);
+        CalendarInfo? match = region == null
+            ? null
+            : _calendars.FirstOrDefault(c => c.Locale != null && RegionOf(c.Locale) == region);
+        return match?.FileName ?? FallbackCalendarFile;
+    }
+
+    // The two-letter region of a culture name, or null for a neutral or invariant culture or an unknown name.
+    private static string? RegionOf(string cultureName)
+    {
+        try
+        {
+            CultureInfo culture = CultureInfo.GetCultureInfo(cultureName);
+            return culture.IsNeutralCulture || culture.Name.Length == 0
+                ? null
+                : new RegionInfo(culture.Name).TwoLetterISORegionName;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private string? ReadFile(string name, out string? path)

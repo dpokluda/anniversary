@@ -73,6 +73,18 @@ public sealed class FindTests : IDisposable
         Assert.Equal(new DateOnly(2028, 2, 29), book.Find("Horymír", new DateOnly(2027, 1, 1), false, false));
     }
 
+    [Fact]
+    public void SearchStopsOnLastDayOfYear9999()
+    {
+        // 31 December 9999 is the last day DateOnly can hold, so it ends searches from 9998 and 9999.
+        AnniversaryBook book = TestFiles.Book(_folder, calendar: """{ "06-01": "Laura", "12-31": "Silvestr" }""");
+
+        Assert.Equal(new DateOnly(9999, 12, 31), book.Find("Silvestr", new DateOnly(9999, 6, 2), false, false));
+        Assert.Equal(new DateOnly(9999, 12, 31), book.Find("Silvestr", new DateOnly(9999, 12, 31), false, false));
+        Assert.Null(book.Find("Laura", new DateOnly(9999, 6, 2), false, false));
+        Assert.Null(book.Find("Nobody", new DateOnly(9998, 1, 1), false, false));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

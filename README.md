@@ -81,8 +81,8 @@ The app needs fontconfig, libX11, libICE and libSM, which desktop distributions 
 
 ## Your data
 
-The app ships with an empty people list, the Czech name-day calendar as the default and 9 more calendars to choose from.
-It looks for each file in this order, and the first one found wins:
+The app ships with an empty people list and 11 calendars: the US holiday calendar and 10 name-day calendars. It looks
+for each file in this order, and the first one found wins:
 
 1. next to the executable,
 2. the user app-data folder:
@@ -95,17 +95,27 @@ It looks for each file in this order, and the first one found wins:
 |---|---|---|
 | `Anniversary.Data.json` | the people (edit them with **⋯ ▸ Edit People…**) | yes, when you save in the editor |
 | `appsettings.json` | configuration (`calendarFile`, `dataFile`, `displayYearsOnBirthdays`, `numberOfDaysAhead`) | never |
-| `usersettings.json` | the chosen theme and name-day calendar | yes |
-| `Anniversary.Calendar.*.json` | extra or replacement name-day calendars | never |
+| `usersettings.json` | the chosen theme and calendar | yes |
+| `Anniversary.Calendar.*.json` | extra or replacement calendars | never |
 
 **Moving from v4:** copy your `Anniversary.Data.json` (and `appsettings.json`, if you changed it) from the v4 folder into
-the app-data folder above. The format is unchanged. A birth year of `9999` still means "year unknown".
+the app-data folder above. The format is unchanged. A birth year of `9999` still means "year unknown". If your OS
+region isn't Czechia, choose **Czechia (Česko)** in the calendar menu once (a copied v4 `appsettings.json` already
+selects it).
 
-## Name-day calendars
+## Calendars
 
-Choose one with **⋯ ▸ Nameday Calendar** (macOS: **View ▸ Nameday Calendar**). The choice is remembered. To add a
-calendar, put an `Anniversary.Calendar.{Name}.json` file into the app-data folder; it appears in the menu the next time
-it opens. The shipped calendars, their sources and licenses are described in [`calendars/README.md`](calendars/README.md).
+The default calendar is the one for your OS region, for example Czech in Czechia or Slovak in Slovakia. For any other
+region it's the **United States** calendar: the federal holidays plus well-known observances such as Mother's Day and
+Halloween. The name-day calendars list names instead. To use another one, choose it with **⋯ ▸ Nameday Calendar**
+(macOS: **View ▸ Nameday Calendar**); the choice is remembered. A `calendarFile` in your own `appsettings.json` also
+works. To add a calendar, put an `Anniversary.Calendar.{Name}.json` file into the app-data folder; it appears in the
+menu the next time it opens.
+
+Besides `MM-dd` dates, a calendar file can list days that move from year to year: `11-Thu-4` (the fourth Thursday of
+November), `05-Mon-last` (the last Monday of May) and `easter`, each optionally moved by up to 99 days (`easter+1`,
+`11-Thu-4+1`). The format is in [`specs/spec.md`](specs/spec.md) (5.1). The shipped calendars, their sources and
+licenses are described in [`calendars/README.md`](calendars/README.md).
 
 ## Projects
 
@@ -115,7 +125,7 @@ it opens. The shipped calendars, their sources and licenses are described in [`c
 | `Anniversary.Desktop` | the Windows/macOS/Linux executable (`Program.cs`) |
 | `Anniversary.Tests` | xUnit tests in the classic style: real objects and real files, no mocks |
 | `icon/` | the app icon and the script that draws it (see [`icon/README.md`](icon/README.md)) |
-| `calendars/` | name-day calendars and the script that builds them |
+| `calendars/` | calendars (name days and holidays) and the script that builds them |
 
 ## License
 

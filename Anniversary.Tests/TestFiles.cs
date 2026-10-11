@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Anniversary.Tests;
 
 /// <summary>
@@ -31,6 +33,27 @@ internal static class TestFiles
         folder.Write(CalendarName, Calendar(calendar));
         folder.Write(DataName, People(people));
         return AnniversaryBook.Load(null, folder.FolderPath);
+    }
+
+    /// <summary>
+    /// Loads a book while the current culture is the given one, the way the app runs with the OS culture (spec 5.7).
+    /// </summary>
+    /// <param name="culture">The culture name, e.g. <c>"cs-CZ"</c>; <c>""</c> is the invariant culture.</param>
+    /// <param name="preferredCalendar">The calendar chosen by the user, or <c>null</c>.</param>
+    /// <param name="folders">The folders to look in.</param>
+    /// <returns>The loaded book.</returns>
+    public static AnniversaryBook LoadInCulture(string culture, string? preferredCalendar, params string[] folders)
+    {
+        CultureInfo saved = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+        try
+        {
+            return AnniversaryBook.Load(preferredCalendar, folders);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = saved;
+        }
     }
 
     /// <summary>

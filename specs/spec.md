@@ -16,7 +16,7 @@ All intended differences are listed in [Deliberate changes from v4](#11-delibera
 | **Platform priority** | Windows → macOS → Linux → iOS → Android. |
 | **Phase 1 (this spec)** | Desktop: Windows (x64 + arm64), macOS (arm64 + x64), Linux (x64 + arm64). |
 | **Later phases** | iOS app project (phase 2), Android (phase 3, optional). The code structure must allow adding them without restructuring. |
-| **Non-goals (phase 1)** | Installers/MSIX, macOS `.app` bundle/signing/notarization, trimming/AOT, localization of UI strings, automatic choice of name-day calendar by OS locale. |
+| **Non-goals (phase 1)** | Installers/MSIX, macOS `.app` bundle/signing/notarization, trimming/AOT, localization of UI strings. |
 
 ## 2. Technology
 
@@ -98,9 +98,10 @@ Namespaces: `Anniversary` (App, AnniversaryBook, DayInfo), `Anniversary.Model`, 
 
 ## 5. Data
 
-### 5.1 Files (v4 format; v5 only adds optional calendar metadata)
+### 5.1 Files (v4 format; v5 adds optional calendar metadata and rule keys)
 
 **`appsettings.json`**: configuration. Read with case-insensitive property names; comments and trailing commas allowed.
+This is the v4 file:
 
 ```json
 {
@@ -113,13 +114,13 @@ Namespaces: `Anniversary` (App, AnniversaryBook, DayInfo), `Anniversary.Model`, 
 
 | Key | Type | Default (if missing) |
 |---|---|---|
-| `calendarFile` | file name or absolute path | `Anniversary.Calendar.Czech.json` |
+| `calendarFile` | file name or absolute path | none: the calendar for the OS region, otherwise `Anniversary.Calendar.US.json` (5.7) |
 | `dataFile` | file name or absolute path | `Anniversary.Data.json` |
 | `displayYearsOnBirthdays` | bool | `true` |
 | `numberOfDaysAhead` | int (≥ 0) | `7` |
 
-**Calendar file**: name-day calendar, keys `MM-dd` (up to 366 entries including `02-29`; days without names may be
-missing), values are display text
+**Calendar file**: a name-day or holiday calendar. Keys are `MM-dd` dates (up to 366 entries including `02-29`; days
+without names may be missing) or **rule keys** for dates that move from year to year (below). Values are display text
 (may contain `,` or `/`, e.g. `"Štefan/Sára"`, `"Adam a Eva/Štědrý den"`). v5 adds **optional metadata** next to
 `calendar`. v4-style files without it still load.
 
@@ -136,8 +137,21 @@ missing), values are display text
 | Field | Meaning |
 |---|---|
 | `name` | Display name in the calendar menu (7.10). If missing, it comes from the file name (`Anniversary.Calendar.{X}.json` → `X`). |
-| `locale` | Culture code (informational; reserved for automatic choice by OS locale later). |
+| `locale` | Culture code. Its region (e.g. `CZ` in `cs-CZ`) makes the calendar the default for that OS region (5.7). |
 | `source`, `license` | Where the data came from and under what terms. **Required for every calendar added in v5** (see 5.7). |
+
+#### Rule keys (floating dates)
+
+| Key | The date in each year | Example |
+|---|---|---|
+| `MM-Ddd-n` | the n-th (1–4) weekday `Ddd` of month `MM`; `Ddd` is `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, `Sat` or `Sun` | `11-Thu-4`: Thanksgiving |
+| `MM-Ddd-last` | the last weekday `Ddd` of month `MM` | `05-Mon-last`: Memorial Day |
+| `easter` | Easter Sunday (Western, Gregorian calendar) | `easter`: Easter |
+| a rule followed by `+n` or `-n` | that date moved by n days (1–99) | `easter+1`: Easter Monday, `11-Thu-4+1`: Black Friday |
+
+- Keys are case-insensitive. An offset may move the date into the previous or next year (e.g. `12-Mon-last+7`).
+- `AnniversaryBook` works out the dates for the years it shows (6.3). People's `namedate` stays `MM-dd`.
+- A key that is neither a valid `MM-dd` nor a rule is reported (5.4) and ignored; the other entries still load.
 
 **Data file**: people. `birthdate` and anniversary keys are `yyyy-MM-dd`; `namedate` is `MM-dd`; all except `name` are optional.
 
@@ -155,11 +169,13 @@ missing), values are display text
 - **People (`Anniversary.Data.json`): empty.** `{ "data": [] }`. No personal names or birthdates are compiled into the
   binaries. Users add people with the editor (7.8), or copy their v4 `Anniversary.Data.json` into the user app-data folder
   (or next to the executable); the lookup order (5.3) prefers that file automatically.
-- **Calendars: 10 shipped**, all in [`calendars\`](../calendars/README.md) and embedded in the app: Czech (the v4
-  calendar, values unchanged, metadata added: `"Czechia (Česko)"`, `"cs-CZ"`), Austrian, Bulgarian, French, Hungarian,
-  Italian, Latvian, Polish, Russian and Slovak. Czech stays the default (`calendarFile` in `appsettings.json`). Users
-  choose another in the app (5.7, 7.10).
-- **`appsettings.json`**: the v4 file.
+- **Calendars: 11 shipped**, all in [`calendars\`](../calendars/README.md) and embedded in the app: the **US** holiday
+  calendar (`"United States"`, `"en-US"`) and 10 name-day calendars: Czech (the v4 calendar plus the two Easter
+  holidays, Velký pátek and Velikonoční pondělí; metadata added: `"Czechia (Česko)"`, `"cs-CZ"`), Austrian, Bulgarian,
+  French, Hungarian, Italian, Latvian, Polish, Russian and Slovak. The default is the calendar for the OS region (e.g.
+  Czech in Czechia), otherwise the US one (5.7). Users choose another in the app (7.10), and the choice is remembered
+  (5.5).
+- **`appsettings.json`**: the v4 file without `calendarFile`, so the calendar is chosen by the OS region (5.7).
 - When the people list is empty, the Birthdays and Anniversaries box shows a muted hint instead of nothing:
   *"No people yet. Use ⋯ ▸ Edit People… to add some."*
 
@@ -168,7 +184,7 @@ missing), values are display text
 Ported from v4 with XML docs:
 - `AppConfig`: `CalendarFile`, `DataFile`, `DisplayYearsOnBirthdays`, `NumberOfDaysAhead` (defaults as in the table above).
 - `Person`: `Name`, `DateOnly? Birthdate`, `string? Namedate`, `Dictionary<DateOnly, string>? Anniversaries`.
-- `CalendarData`: `[JsonPropertyName("Calendar")] Dictionary<string, string> Data`, plus the optional metadata from 5.1: `string? Name`, `string? Locale`, `string? Source`, `string? License`. This was `Calendar` in v4; it was
+- `CalendarData`: `[JsonPropertyName("Calendar")] Dictionary<string, string> Data` (keys `MM-dd` or rule keys, 5.1), plus the optional metadata from 5.1: `string? Name`, `string? Locale`, `string? Source`, `string? License`. This was `Calendar` in v4; it was
   renamed so it doesn't clash with Avalonia's `Calendar` control.
 - `AnniversaryData`: `[JsonPropertyName("Data")] List<Person> People`. This was `Model.Anniversary` in v4; it was
   renamed so it doesn't clash with the `Anniversary` namespace.
@@ -203,6 +219,7 @@ each warning in a message dialog (title **"Data Error"**, or **"Configuration Er
 | Config invalid JSON | `Error loading configuration: {message}` + newline + `Using default settings.` | default `AppConfig` |
 | Calendar not found | `Calendar file not found: {name}` | empty calendar |
 | Calendar invalid JSON | `Error loading calendar: {message}` | empty calendar |
+| Calendar keys that are neither `MM-dd` nor a rule (5.1) | `Unknown dates in {name}: {key}, {key}` (at most 5 keys, then `and {n} more`) | those entries are ignored |
 | Data not found | `Data file not found: {name}` | no people |
 | Data invalid JSON | `Error loading data: {message}` | no people |
 
@@ -237,15 +254,20 @@ The user-edited `appsettings.json` is never written by the app.
 - **Errors** (`IOException`, `UnauthorizedAccessException`, e.g. a read-only folder next to the exe) propagate to the
   editor, which shows *"Could not save the data file: {message}"* (title "Edit People") and stays open.
 
-### 5.7 Name-day calendars (choosing and adding)
+### 5.7 Calendars (choosing and adding)
 
 - **Discovery:** the available calendars are all files named `Anniversary.Calendar.*.json` in the lookup folders (5.3),
   plus the embedded defaults. They are merged **by file name** with the same precedence as 5.3 (exe folder, then
-  app-data, then embedded). So a user can add a calendar by dropping a file into the app-data folder, or override the
-  Czech one. The list is sorted by display name.
-- **Which calendar is active:** `UserSettings.Calendar` if it is set and the file is still available; otherwise
-  `appsettings.json` → `calendarFile`; otherwise the Czech default. Choosing a calendar in the menu (7.10) saves it to
-  `UserSettings.Calendar`.
+  app-data, then embedded). So a user can add a calendar by dropping a file into the app-data folder, or override a
+  shipped one. The list is sorted by display name.
+- **Which calendar is active:** the first that applies:
+  1. `UserSettings.Calendar`, if it is set and the file is still available. Choosing a calendar in the menu (7.10)
+     saves it there.
+  2. `calendarFile` from `appsettings.json`, if it is set (a copied v4 file sets Czech).
+  3. The first calendar, by display name, whose `locale` has the region of `CultureInfo.CurrentCulture` (e.g. `cs-CZ`
+     or `en-CZ` → `CZ` → Czech). The OS sets that culture: the regional format on Windows, Language & Region on macOS,
+     and `LANG`/`LC_ALL` on Linux. A neutral or invariant culture has no region.
+  4. The US calendar.
 - **Switching** reloads only the calendar (people are unchanged) and refreshes the main window. Find and Next N days
   use the new calendar right away. Errors follow 5.4 (a warning, then an empty calendar).
 - **Shipped calendars and adding more:** the files in `calendars\` are generated by `calendars\Build-Calendars.ps1`
@@ -254,7 +276,14 @@ The user-edited `appsettings.json` is never written by the app.
   matches v4 on 359/366 days) and what was left out and why: Croatian (damaged source data), Greek (incomplete, and
   partly tied to Easter), Swedish/Finnish (copyrighted official lists), and Lithuanian/Estonian/Danish/German/Spanish
   (no verified open source yet). To add a country, extend the script with a pinned source plus its license and
-  validation. Data is **never** typed in or made up by hand.
+  validation. Name days are **never** typed in or made up by hand.
+- **Holiday calendars** (so far the US one) list days defined by law or by long tradition, so there is no list to
+  download. Their entries are written in `Build-Calendars.ps1`, each with its source: federal holidays from
+  5 U.S.C. 6103(a), observances designated in 36 U.S.C. (Mother's Day, Father's Day, Flag Day, Patriot Day), the
+  daylight saving time dates from 15 U.S.C. 260a, and traditional dates. Floating dates use rule keys (5.1). Tests check
+  the federal holidays against OPM's published schedules (9). Observed days off (e.g. Friday 3 July 2026 when 4 July is
+  a Saturday) aren't listed. The script also adds the two Czech public holidays that move with Easter, `easter-2` Velký
+  pátek and `easter+1` Velikonoční pondělí (Act No. 245/2000 Coll., § 2), to the Czech calendar.
 - **License notice:** `calendars\THIRD-PARTY-NOTICES.md` must ship with the app (copied next to the executable on
   publish, see 10) because the MIT license requires it.
 
@@ -281,7 +310,8 @@ public sealed record DayInfo(
     IReadOnlyList<string> NextDaysNames); // calendar names in the next N days
 ```
 
-Internally: a `Dictionary<string, string>` calendar and a `Dictionary<string, List<Person>>` index from `MM-dd` to people
+Internally: the calendar's `MM-dd` entries in a `Dictionary<string, string>`, its rule entries (5.1) in a list in file
+order, and a `Dictionary<string, List<Person>>` index from `MM-dd` to people
 (as in v4). **A person is added at most once per date key**, even if several of their events fall on the same day.
 
 **Dates and "today".** All logic works with `DateOnly`, since it never needs a time of day. `AnniversaryBook` never reads
@@ -311,14 +341,16 @@ public sealed record CalendarInfo(string FileName, string DisplayName, string? L
 ```
 
 `Load(string? preferredCalendar, params string[] folders)` applies the rule from 5.7: the preferred calendar if it's
-available, otherwise `Config.CalendarFile`. If the active calendar isn't among the discovered ones (e.g. `calendarFile` is
+available, otherwise `Config.CalendarFile`, otherwise the calendar for the region of `CultureInfo.CurrentCulture`,
+otherwise the US one. Like the calendar sorting, this reads the current culture, which the app leaves at the OS
+culture and tests set. If the active calendar isn't among the discovered ones (e.g. `calendarFile` is
 an absolute path), it is added to `Calendars` too, so the menu can always show a checked item. The **last** folder passed
 to `Load` is the user app-data folder (desktop passes exe folder, then app-data); with no folders, `AppDataFolder` is `""`
 and saving (5.6) isn't possible, which only matters in tests that don't save.
 
 ### 6.1 Day rules (`GetDay(day)`, `key = day.ToString("MM-dd")`)
 
-- **CalendarNames**: the calendar value for `key`, else `""`.
+- **CalendarNames**: the calendar names for the day (6.3), else `""`.
 - **Namedays**: for each person indexed at `key`, **in data-file order**, if `Namedate == key` → `Name`.
 - **Birthdays**: for each person indexed at `key`, in data-file order:
   1. if `Birthdate` is on `key` → `"{Name} ({day.Year - Birthdate.Year})"`, or just `"{Name}"` if `DisplayYearsOnBirthdays` is false;
@@ -327,21 +359,35 @@ and saving (5.6) isn't possible, which only matters in tests that don't save.
   - Years are shown only when the date's year is not after the displayed day's year. v4 data uses `9999` for "year
     unknown", and showing years for it would print a negative number (e.g. "Alena (-7973)"). The same rule hides
     the years when browsing to a year before the event.
-- **Next N days** (N = `Config.NumberOfDaysAhead`), for `i = 1..N`, `k = day.AddDays(i).ToString("MM-dd")`:
-  - **NextDaysNames**: the calendar value for `k` split by `,`, each entry trimmed, empty ones skipped, duplicates removed
-    (first occurrence wins), in date order.
+- **Next N days** (N = `Config.NumberOfDaysAhead`), for `i = 1..N`, `d = day.AddDays(i)`, `k = d.ToString("MM-dd")`. The
+  look-ahead stops at 31 December 9999 (`DateOnly.MaxValue`), the last day that exists, so near it fewer than N days
+  are included:
+  - **NextDaysNames**: the calendar names for `d` (6.3) split by `,`, each entry trimmed, empty ones skipped, duplicates
+    removed (first occurrence wins), in date order.
   - **NextDaysPeople**: `Name` of every person indexed at `k` (birthday, nameday or anniversary), duplicates removed,
     in date order and then data-file order.
 - **29 February** keys match only in leap years (same as v4).
 
 ### 6.2 Find rules (`Find(name, from, wholeWordsOnly, calendarOnly)`)
 
-- Search day by day from `from` (inclusive) to **31 December of `from.Year + 1`** (inclusive). Return the first matching date, or `null`.
-- A date matches if its calendar value matches, or (unless `calendarOnly`) any person indexed at that date has a matching `Name`.
+- Search day by day from `from` (inclusive) to **31 December of `from.Year + 1`** (inclusive), or to 31 December 9999
+  (`DateOnly.MaxValue`) when `from` is in 9999. Return the first matching date, or `null`.
+- A date matches if its calendar names (6.3) match, or (unless `calendarOnly`) any person indexed at that date has a matching `Name`.
 - Matching is case-insensitive ordinal:
   - `wholeWordsOnly`: split the text on `' ', ',', ';', '\t', '/', '-'` (removing empty entries); match if any word equals `name`.
   - otherwise: `text.Contains(name, StringComparison.OrdinalIgnoreCase)`.
 - If `name` is null or whitespace, return `null`.
+
+### 6.3 Calendar names for a day (rule keys)
+
+- The day's `MM-dd` entry comes first, then each rule (5.1) that falls on the day, in file order, joined with `", "`.
+  For example, Easter Monday 2026 in the Czech calendar is `"Vendula, Velikonoční pondělí"`.
+- A rule falls on the day if its date in the day's year, or in the year before or after, is that day (an offset of up
+  to 99 days can cross New Year). The dates are worked out when needed, not stored.
+- `MM-Ddd-n` is the first `Ddd` on or after the 1st of the month plus `7 × (n − 1)` days. `MM-Ddd-last` is the last
+  `Ddd` on or before the month's last day. `easter` uses the Gregorian computus (the anonymous algorithm of Meeus, Jones
+  and Butcher), which gives a Sunday from 22 March to 25 April for every year `DateOnly` holds. The offset is added last.
+- A date outside `DateOnly`'s range (e.g. `12-Mon-last+7` in 9999) is skipped, so the ends of the range never fail.
 
 ## 7. User interface
 
@@ -444,7 +490,9 @@ More mocks: [resized](screens/main-window-resized.light.preview.png), [macOS](sc
 
 - Start-up: the displayed day (a `DateOnly` field) is `DateOnly.FromDateTime(DateTime.Today)`. Initial keyboard focus is on **Quit**, as in v4.
 - After the window opens, show each `AnniversaryBook.Warnings` entry in a `MessageDialog`.
-- **Yesterday** / **Tomorrow**: change the displayed day by −1 / +1 and refresh. **Quit**: close the window, which exits the app.
+- **Yesterday** / **Tomorrow**: change the displayed day by −1 / +1 and refresh. At the ends of `DateOnly`'s range
+  they do nothing: Yesterday on 1 January 0001 and Tomorrow on 31 December 9999 (the same for Go ▸ Yesterday/Tomorrow
+  on macOS). **Quit**: close the window, which exits the app.
 
 #### Commands menu (one `MenuFlyout` defined once as a window resource)
 
@@ -491,7 +539,8 @@ header and wires their `Click` in code.
 - **Find…**: open the Find dialog pre-filled with the last values. On OK, store the values; if the name is blank, show
   *"Please enter a name to search for."* (title "Find"). Otherwise search from the displayed day if *From current date*
   is checked, else from **1 January of the displayed year**.
-- **Find Next**: if there is no stored name, behave like Find…; otherwise search from **displayed day + 1**.
+- **Find Next**: if there is no stored name, behave like Find…; otherwise search from **displayed day + 1**. On
+  31 December 9999 no day follows, so it reports "not found".
 - Result: if found, show that date. If not, show *"'{name}' not found."* (title "Find").
 
 ### 7.3 Change Date dialog (`Views\ChangeDateDialog`)
@@ -599,8 +648,9 @@ header and wires their `Click` in code.
 ([mock](screens/main-window-calendar-menu.light.preview.png))
 
 - **⋯ ▸ Nameday Calendar ▸** lists the calendars from `AnniversaryBook.Calendars` as radio items (display name), with
-  the active one checked. The same list appears under **View ▸ Nameday Calendar** on macOS. The 10 shipped calendars
-  appear by default, plus any user-supplied calendar files.
+  the active one checked. The same list appears under **View ▸ Nameday Calendar** on macOS. The 11 shipped calendars
+  (the US holiday calendar and 10 name-day calendars) appear by default, plus any user-supplied calendar files. The menu
+  keeps the name *Nameday Calendar* although the US calendar lists holidays (user decision).
 - Choosing one calls `AnniversaryBook.UseCalendar(fileName)`, refreshes the main window, saves `UserSettings.Calendar`,
   and shows any new warnings (5.4).
 - The submenu is rebuilt each time the menu opens, so a calendar file added while the app runs appears without a restart.
@@ -625,14 +675,15 @@ header and wires their `Click` in code.
   - **DayTests**: calendar names for a day; nameday listed; birthday with years; birthday without years when the config
     turns it off; anniversary line format; birthday and nameday on the same day → listed once in each list (no duplicates);
     next N days respects `numberOfDaysAhead`, orders by date, removes duplicate people and calendar names, splits calendar
-    entries by `,`; 29 February only in leap years; empty lists for a day with no data.
+    entries by `,`; next N days stop at 31 December 9999; 29 February only in leap years; empty lists for a day with no data.
   - **FindTests**: case-insensitive substring; whole-words with each delimiter; whole-words does not match a part of a
     word; `calendarOnly` ignores people; the `from` date itself is included; nothing found after 31 December of the
-    following year → `null`; blank name → `null`.
+    following year → `null`; searches from 9998 and 9999 stop at 31 December 9999 without failing; blank name → `null`.
   - **LoadTests**: the first folder wins over the second; falls back to the second folder; falls back to the built-in
-    defaults when no folder has the file (no folders passed → defaults load and contain the `10-09` calendar entry);
-    an absolute path in the config is used; invalid JSON → warning text as in 5.4 and empty data; missing non-default
-    file → `Calendar file not found: …` / `Data file not found: …`; invalid config → default config plus warning.
+    defaults when no folder has the file (no folders passed → defaults load without a `calendarFile`, and in `en-US` the
+    US calendar shows Independence Day on 4 July); an absolute path in the config is used; invalid JSON → warning text
+    as in 5.4 and empty data; missing non-default file → `Calendar file not found: …` / `Data file not found: …`;
+    invalid config → default config plus warning.
   - **UserSettingsTests**: a missing file → `Theme == System`; save then load keeps `Dark`; invalid JSON → `System`;
     `"theme": "light"` (lowercase) loads as `Light`; `Save()` creates a missing folder. The theme switching itself is UI
     behaviour and is checked manually (acceptance criterion 7).
@@ -645,11 +696,22 @@ header and wires their `Click` in code.
     `From`/`ToPerson` round-trips a person (birthday `DateOnly` ↔ `DateTime?`, empty nameday → `null`); a list of
     `AnniversaryRow`s with a duplicate date is reported invalid; `NamedayDate` keeps only month and day (and uses a
     leap year for 29 February); `MonthDayPattern` removes the year from short date patterns of several cultures.
-  - **CalendarTests**: discovers `Anniversary.Calendar.*.json` across folders plus the 10 embedded calendars; the exe
+  - **CalendarTests**: discovers `Anniversary.Calendar.*.json` across folders plus the 11 embedded calendars; the exe
     folder wins over app-data, which wins over embedded, for the same file name; the display name comes from `name`, or
     from the file name if `name` is missing; a v4-style file without metadata loads; the preferred calendar is used when
-    available, otherwise `calendarFile`; `UseCalendar` changes `GetDay(...).CalendarNames` and `Find` results without
+    available, otherwise `calendarFile`; with neither, the calendar for the culture's region (`cs-CZ` and `en-CZ` →
+    Czech, `sk-SK` → Slovak, `de-AT` → Austrian), otherwise US (`en-US`, `en-GB`, `de-DE`, the neutral `cs` and the
+    invariant culture); `UseCalendar` changes `GetDay(...).CalendarNames` and `Find` results without
     touching people; `UserSettings` round-trips `Calendar`.
+  - **CalendarRuleTests**: `MM-Ddd-n` and `MM-Ddd-last` (including a month with five Mondays and 29 February 2028 as the
+    last Tuesday of February); Easter on known dates from 1818 to 2285, and on a Sunday from 22 March to 25 April in
+    every year from 1 to 9999; offsets, including one that moves a date into the next year; an `MM-dd` entry and a rule
+    on the same day are joined; keys are case-insensitive; Next N days across New Year uses the next year's rules; Find
+    finds a rule date in the following year; unknown keys give one warning (at most 5 keys listed) and the other
+    entries still work; rules at the ends of `DateOnly`'s range don't fail. The shipped calendars: the US one has the
+    federal holidays of 2025–2027 on the dates in OPM's schedules (fixed-date holidays on their legal date, because OPM
+    lists the weekday off when one falls on a weekend) and its floating observances in 2026, and the Czech one has Velký
+    pátek and Velikonoční pondělí in 2026.
 
 ## 10. Build, run and publish
 
@@ -692,17 +754,18 @@ above on its own OS and attaches the result to the run as one file, `Anniversary
 | C16 | Years aren't shown when the date's year is after the displayed day (6.1); v4 printed negative years for the `9999` "unknown year" placeholder. | Found while testing with the real v4 data. |
 | C17 | Refreshed app icon: the same tear-off calendar (yellow binding, red "24", blue lines), redrawn in full colour at 16–256 px (Windows) and up to 1024 px (macOS `.icns`). The v4 icon was 16-colour at 16 and 32 px only. | Sharp on high-DPI and Retina screens. |
 | C18 | Open source under the MIT License (`LICENSE`) instead of freeware: the About dialog and the assembly copyright say *"Copyright © 1997-{year} David Pokluda"*, the About dialog adds *"MIT License"*. | Published in its own public repository. |
+| C19 | Calendar files may use **rule keys** for dates that move from year to year (5.1, 6.3). A new **US** holiday calendar (federal holidays and well-known observances) ships. The default calendar follows the **OS region** (e.g. Czech in Czechia) and is US where no calendar matches; v4 always used Czech. The Czech calendar adds Velký pátek and Velikonoční pondělí. Unknown calendar keys are reported (5.4). | User request: a calendar for countries without name days, starting with the US, and a sensible default for everyone. |
 
 ## 12. Acceptance criteria
 
 1. `dotnet build` and `dotnet test` succeed with no warnings in the new code; all tests in section 9 pass. CI checks this on Windows, macOS and Linux (10).
 2. On Windows, the app starts showing today's data. Its layout, captions, fonts and commands match section 7 and the
    preview mocks. Light and dark mode both look right.
-3. With the **v4 data file** placed in the app-data folder (or next to the exe), 9 October 2026 shows "Štefan/Sára", empty
+3. With the **Czech** calendar chosen and the **v4 data file** placed in the app-data folder (or next to the exe), 9 October 2026 shows "Štefan/Sára", empty
    Namedays and Birthdays, and the Next 7 days text as in the mocks (a people line, shown as the made-up `Martin Novák` in the mocks instead of the
    real person, then the names line `Marina, Andrej, Marcel, Renáta, Agáta, Tereza, Havel`). Without it, people lists are empty and the hint from 5.1 is shown.
 4. Yesterday, Tomorrow, Today, Change Date (both via the menu and by clicking the date), Find, Find Next, About and Quit
-   behave as specified. Ctrl+F and F3 work.
+   behave as specified. Ctrl+F and F3 work. Nothing crashes on 1 January 0001 or in the last days of 9999.
 5. Resizing behaves like v4 (the "Resizing" table in 7.2). When the window is maximized or dragged larger, only
    "Next N days" gets taller. Namedays and Birthdays keep their height. All sections stretch to the width. Yesterday and
    Tomorrow stay at the bottom-left and Quit at the bottom-right. Nothing is clipped at the minimum size.
@@ -721,7 +784,11 @@ above on its own OS and attaches the result to the run as one file, `Anniversary
     - Cancel discards all changes.
 11. Copying a second calendar file (e.g. a test `Anniversary.Calendar.Test.json` with `"name": "Test"`) into the
     app-data folder makes it appear in **Nameday Calendar**. Choosing it changes the calendar names in the main window
-    immediately, and the choice survives a restart. Removing the file falls back to `calendarFile`/Czech without errors.
+    immediately, and the choice survives a restart. Removing the file falls back to the default (5.7) without errors.
+12. On a fresh install with the OS region set to the United States (or to a region without its own calendar), the US
+    calendar is active: 26 November 2026 shows *Thanksgiving* and 27 November *Black Friday*, 5 April 2026 shows
+    *Easter*, and Next 7 days on 20 November 2026 lists Thanksgiving. With the region set to Czechia, or with Czech
+    chosen, 6 April 2026 shows *Vendula, Velikonoční pondělí*.
 
 ## 13. Implementation order
 
