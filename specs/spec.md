@@ -16,7 +16,7 @@ All intended differences are listed in [Deliberate changes from v4](#11-delibera
 | **Platform priority** | Windows → macOS → Linux → iOS → Android. |
 | **Phase 1 (this spec)** | Desktop: Windows (x64 + arm64), macOS (arm64 + x64), Linux (x64 + arm64). |
 | **Later phases** | iOS app project (phase 2), Android (phase 3, optional). The code structure must allow adding them without restructuring. |
-| **Non-goals (phase 1)** | Installers/MSIX, macOS `.app` bundle/signing/notarization, trimming/AOT, localization of UI strings. |
+| **Non-goals (phase 1)** | MSIX, code signing and notarization (the packages in 10 are unsigned, the macOS app ad-hoc signed), trimming/AOT, localization of UI strings. |
 
 ## 2. Technology
 
@@ -816,10 +816,28 @@ plain text, covering what the app does, starting it on each OS (including the fi
 using it (the window, commands and shortcuts), the people and sharing them (7.11), the calendars, the data folder and
 `appsettings.json`, removing the app, and the license. Every change users can see updates it.
 
+**Packages** (`packaging\Build-Package.ps1 -Rid <rid>`, PowerShell 7, run on the RID's own OS after publishing to
+`publish\<rid>`; output in `packages\`). Besides the plain archives, each platform gets a package for people who just
+want to install the app:
+
+| RIDs | Package | What it does |
+|---|---|---|
+| `win-x64`, `win-arm64` | `Anniversary-{version}-{rid}-setup.exe`, built with Inno Setup 6 from `packaging\windows\Anniversary.iss` | Installs for the current user only, without admin rights, into `%LOCALAPPDATA%\Programs\Anniversary`: `Anniversary.exe`, `README.md`, `THIRD-PARTY-NOTICES.md`, a Start-menu shortcut and an optional desktop shortcut, then offers to start the app. One fixed `AppId`, so a newer version (or the other architecture) updates in place. The uninstaller (Settings ▸ Apps) removes the app but never the app-data folder (5.3). |
+| `osx-arm64`, `osx-x64` | `Anniversary-{version}-{rid}.dmg` | Holds `Anniversary.app`, an Applications shortcut to drag it onto, `README.md` and `THIRD-PARTY-NOTICES.md`. The bundle has `Contents/MacOS/Anniversary`, `Contents/Resources/App.icns` (`icon\App.icns`), the README and notices, and `Contents/Info.plist` from `packaging\macos\Info.plist` (id `cz.pokluda.anniversary`, name, version and copyright from `Directory.Build.props`, minimum macOS 12.0 as the published executable declares). It is ad-hoc signed with `codesign`: Apple Silicon requires signed code, and a downloaded unsigned bundle is reported as damaged instead of offering Open Anyway. |
+| `linux-x64`, `linux-arm64` | `Anniversary-{version}-{rid}.AppImage` (an AppImage rather than an RPM: user decision) | One portable file with nothing to install: `AppRun` (`packaging\linux\AppRun`), `anniversary.desktop`, the 256 px icon (`Anniversary.Shared\Assets\App.png`), `usr/bin/Anniversary` and the README and notices in `usr/share/doc/anniversary`. Built with appimagetool 1.9.1 and the AppImage type2 runtime 20251108 (static, needs no libfuse2), both downloaded at pinned versions and checked by SHA-256. |
+
+- **Signing:** none beyond the macOS ad-hoc signature, so the first start needs Windows SmartScreen's *More info ▸ Run
+  anyway* or macOS's *System Settings ▸ Privacy & Security ▸ Open Anyway*; the user README explains both. Developer ID
+  signing with notarization, and a Windows code-signing certificate, would remove these steps (not decided).
+- Inside the `.app` and the AppImage, the folder next to the executable (5.3) is read-only and holds no data files;
+  users keep theirs in the app-data folder.
+- macOS packages are built on macOS (`codesign`, `hdiutil`), Windows installers on Windows (Inno Setup, preinstalled on
+  GitHub's Windows runners), and AppImages on Linux (x86_64 or aarch64 hosts).
+
 **CI** (`.github\workflows\ci.yml`) runs on every push to `main`, on pull requests and on demand. It builds the
 solution with warnings as errors and runs the tests on Windows, macOS and Linux. If they pass, it publishes each RID
-above on its own OS and attaches the result to the run as one file, `Anniversary-{rid}.zip` (Windows) or
-`Anniversary-{rid}.tar.gz` (macOS, Linux; tar keeps the executable bit), kept for 30 days.
+above on its own OS and attaches two files to the run, kept for 30 days: the archive, `Anniversary-{rid}.zip` (Windows)
+or `Anniversary-{rid}.tar.gz` (macOS, Linux; tar keeps the executable bit), and the package from the table above.
 
 ## 11. Deliberate changes from v4
 
@@ -886,6 +904,10 @@ above on its own OS and attaches the result to the run as one file, `Anniversary
     a person added on one appears on the other when its window is next activated (once the cloud app has synced).
     Saving on a computer whose copy changed meanwhile asks before overwriting. If the file is missing at start-up,
     the warning names it, and the editor asks before creating it.
+15. **Packages** (10): the Windows installer installs without admin rights and the app starts from the Start menu;
+    uninstalling removes it and keeps the app-data folder. On macOS, the app dragged from the `.dmg` to Applications
+    starts after *Open Anyway*, with its own name and icon in the Dock and the menu bar, and without a Terminal window.
+    On Fedora, the AppImage starts after being made executable.
 
 ## 13. Implementation order
 

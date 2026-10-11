@@ -5,3 +5,6 @@
 *.png  binary
 *.ico  binary
 *.icns binary
+
+# Read on Linux inside the AppImage (AppRun is a shell script)
+packaging/linux/* text eol=lf

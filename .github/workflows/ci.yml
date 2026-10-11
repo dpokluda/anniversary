@@ -1,4 +1,5 @@
-# Builds and tests on Windows, macOS and Linux, then publishes every RID from spec section 10 as a download.
+# Builds and tests on Windows, macOS and Linux, then publishes every RID from spec section 10 and attaches its archive
+# and its package (installer, .dmg or AppImage) as downloads.
 name: CI
 
 on:
@@ -61,16 +62,27 @@ jobs:
           dotnet publish Anniversary.Desktop -c Release -r ${{ matrix.rid }} --self-contained
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/${{ matrix.rid }}
       # One archive per RID, uploaded as is (not zipped again). tar keeps the executable bit, which zipping loses.
-      - name: Package (zip)
+      - name: Archive (zip)
         if: matrix.archive == 'zip'
         shell: pwsh
         run: Compress-Archive -Path publish/${{ matrix.rid }} -DestinationPath $env:ARCHIVE
-      - name: Package (tar.gz)
+      - name: Archive (tar.gz)
         if: matrix.archive == 'tar.gz'
         run: tar -czf "$ARCHIVE" -C publish ${{ matrix.rid }}
       - uses: actions/upload-artifact@v7
         with:
           path: ${{ env.ARCHIVE }}
+          archive: false
+          retention-days: 30
+          if-no-files-found: error
+      # The installer, .dmg or AppImage, built from the published folder on the RID's own OS.
+      - name: Package
+        id: package
+        shell: pwsh
+        run: ./packaging/Build-Package.ps1 -Rid ${{ matrix.rid }}
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.package.outputs.path }}
           archive: false
           retention-days: 30
           if-no-files-found: error

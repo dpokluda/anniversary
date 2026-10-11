@@ -1,0 +1,4 @@
+#!/bin/sh
+# Starts Anniversary inside the AppImage (spec 10).
+here="$(dirname "$(readlink -f "$0")")"
+exec "$here/usr/bin/Anniversary" "$@"

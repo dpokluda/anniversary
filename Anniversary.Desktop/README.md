@@ -5,18 +5,23 @@ day, together with the day's names or holidays from a calendar you choose. It ru
 
 ## Starting it
 
-The app is the single file `Anniversary` (`Anniversary.exe` on Windows). There's nothing to install: keep this folder
-wherever you like and start the app from there.
+Each download comes in two forms: a package that installs the app (a Windows setup, a macOS `.dmg` or a Linux
+AppImage), or a plain archive (`.zip` or `.tar.gz`) with the single-file app in a folder you keep wherever you like.
 
-- **Windows:** double-click `Anniversary.exe`. The app isn't signed, so the first time Windows may say "Windows
-  protected your PC": click **More info**, then **Run anyway**.
-- **macOS:** use the `osx-arm64` download on Apple Silicon Macs (M1 and newer) and `osx-x64` on Intel Macs. The app
-  isn't signed by Apple, so macOS blocks it the first time: double-click `Anniversary`, close the warning, open
-  **System Settings ▸ Privacy & Security**, click **Open Anyway** next to the message about Anniversary, and
-  double-click it again. A Terminal window opens with it; leave it open while you use the app. (In Terminal, you can
-  instead run `xattr -d com.apple.quarantine Anniversary` once in this folder, then `./Anniversary`.)
-- **Linux:** in a terminal, in this folder, run `./Anniversary`. It needs fontconfig, libX11, libICE and libSM, which
-  desktop distributions already have.
+- **Windows:** run `Anniversary-…-win-x64-setup.exe` (`win-arm64` for Windows on Arm). It installs the app just for
+  you, without admin rights, adds it to the Start menu and starts it. The app isn't signed, so Windows may first say
+  "Windows protected your PC": click **More info**, then **Run anyway**. From the `.zip`, extract it and double-click
+  `Anniversary.exe` instead (the same warning may appear).
+- **macOS:** use `osx-arm64` on Apple Silicon Macs (M1 and newer) and `osx-x64` on Intel Macs. Open the `.dmg` and drag
+  Anniversary onto Applications. The app isn't signed by Apple, so macOS blocks it the first time you start it: close
+  the warning, open **System Settings ▸ Privacy & Security**, click **Open Anyway** next to the message about
+  Anniversary, and start it again. The `.tar.gz` holds the bare app instead: double-click `Anniversary` (the same
+  first-time steps apply) and leave the Terminal window that opens with it; or, in Terminal in its folder, run
+  `xattr -d com.apple.quarantine Anniversary` once, then `./Anniversary`.
+- **Linux:** the `.AppImage` is the whole app in one file. Make it executable (in its file properties, or with
+  `chmod +x Anniversary-*.AppImage`), then double-click it; tools such as Gear Lever add it to the applications menu.
+  From the `.tar.gz`, run `./Anniversary` in the extracted folder. The app needs fontconfig, libX11, libICE and libSM,
+  which desktop distributions already have.
 
 ## Using it
 
@@ -72,10 +77,12 @@ the years:
 
 ## Removing it
 
-Delete the app's folder. Your people and settings stay in the data folder above; delete it too to remove everything.
+On Windows, uninstall Anniversary in **Settings ▸ Apps**; on macOS, drag it from Applications to the Trash; on Linux,
+delete the AppImage. From an archive, delete the app's folder. Your people and settings stay in the data folder above;
+delete it too to remove everything.
 
 ## License
 
 Anniversary is free and open source under the MIT License, Copyright (c) David Pokluda. The name-day calendars come from
-other sources under their own licenses, listed in `THIRD-PARTY-NOTICES.md` next to the app. Source code and issues:
-https://github.com/dpokluda/anniversary
+other sources under their own licenses, listed in `THIRD-PARTY-NOTICES.md`, which comes with the app. Source code and
+issues: https://github.com/dpokluda/anniversary

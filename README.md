@@ -22,7 +22,8 @@ dotnet run --project Anniversary.Desktop
 JetBrains Rider with the AvaloniaRider plugin gives a live XAML preview.
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) builds with warnings as errors and runs the tests on
-Windows, macOS and Linux for every push to `main` and every pull request, then publishes all the builds below.
+Windows, macOS and Linux for every push to `main` and every pull request, then publishes all the builds and packages
+below.
 
 ## Publish
 
@@ -42,21 +43,35 @@ dotnet publish Anniversary.Desktop -c Release -r linux-arm64 --self-contained -p
 All six can be built on Windows. The `arm64` builds are for ARM machines: `win-arm64` for Windows on ARM (e.g.
 Snapdragon laptops), `osx-arm64` for Apple Silicon Macs and `linux-arm64` for ARM Linux (e.g. a Linux virtual machine on
 an Apple Silicon Mac). On macOS and Linux, mark the file executable (`chmod +x Anniversary`). The macOS output is a
-plain executable, not a signed `.app` bundle.
+plain executable; its package (below) wraps it in an `.app` bundle.
+
+### Packages
+
+`packaging/Build-Package.ps1` (PowerShell 7) turns a published folder into the package people install: a per-user
+Windows installer (Inno Setup), a macOS `.dmg` with an ad-hoc signed `Anniversary.app`, or a Linux AppImage. Run it on
+the RID's own OS after publishing; it writes to `packages/`:
+
+```powershell
+pwsh packaging/Build-Package.ps1 -Rid osx-arm64   # packages publish/osx-arm64
+```
+
+[`packaging/README.md`](packaging/README.md) lists what each package holds and what each OS needs to build it.
 
 ### Downloading a build
 
-Every CI run that passes ([Actions](https://github.com/dpokluda/anniversary/actions/workflows/ci.yml)) offers one
-download per platform, kept for 30 days: `Anniversary-{rid}.zip` for Windows and `Anniversary-{rid}.tar.gz` for macOS
-and Linux (downloading needs a GitHub sign-in). Each holds a `{rid}` folder with the executable, `README.md` and
-`THIRD-PARTY-NOTICES.md`. The `.tar.gz` keeps the executable flag, so `tar -xzf Anniversary-linux-x64.tar.gz` gives a
-folder that's ready to run.
+Every CI run that passes ([Actions](https://github.com/dpokluda/anniversary/actions/workflows/ci.yml)) offers two
+downloads per platform, kept for 30 days (downloading needs a GitHub sign-in): the package
+(`Anniversary-{version}-{rid}-setup.exe`, `.dmg` or `.AppImage`) and the archive, `Anniversary-{rid}.zip` for Windows
+and `Anniversary-{rid}.tar.gz` for macOS and Linux. Each archive holds a `{rid}` folder with the executable,
+`README.md` and `THIRD-PARTY-NOTICES.md`. The `.tar.gz` keeps the executable flag, so
+`tar -xzf Anniversary-linux-x64.tar.gz` gives a folder that's ready to run.
 
 ### Running on macOS
 
-The macOS builds are a single ad-hoc signed executable, not a notarized `.app`. Use `osx-arm64` for Apple Silicon (M1 and
-newer) and `osx-x64` for Intel Macs. Copy the `publish/osx-…` folder to the Mac (or extract a CI download), then in
-Terminal:
+Use `osx-arm64` for Apple Silicon (M1 and newer) and `osx-x64` for Intel Macs. The `.dmg` holds `Anniversary.app`,
+ad-hoc signed but not notarized: drag it to Applications, and the first start needs **System Settings ▸ Privacy &
+Security ▸ Open Anyway** (or `xattr -dr com.apple.quarantine /Applications/Anniversary.app`). To run a published folder
+or an extracted archive instead, in Terminal:
 
 ```bash
 cd path/to/osx-arm64
@@ -72,8 +87,9 @@ app menu.
 
 ### Running on Linux
 
-Use `linux-x64` on PCs and `linux-arm64` on ARM machines. Copy the `publish/linux-…` folder (or extract a CI download),
-then:
+Use `linux-x64` on PCs and `linux-arm64` on ARM machines. The AppImage runs once it's executable
+(`chmod +x Anniversary-*.AppImage`; it doesn't need libfuse2). Or copy the `publish/linux-…` folder (or extract a CI
+download), then:
 
 ```bash
 cd path/to/linux-x64
@@ -145,6 +161,7 @@ licenses are described in [`calendars/README.md`](calendars/README.md).
 | `Anniversary.Tests` | xUnit tests in the classic style: real objects and real files, no mocks |
 | `icon/` | the app icon and the script that draws it (see [`icon/README.md`](icon/README.md)) |
 | `calendars/` | calendars (name days and holidays) and the script that builds them |
+| `packaging/` | the installer, `.dmg` and AppImage templates and the script that builds them (see [`packaging/README.md`](packaging/README.md)) |
 
 ## License
 

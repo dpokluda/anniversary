@@ -107,15 +107,17 @@ Phase 1 is done and verified on Windows, macOS and Linux.
 
 Next (the user's plan, in this order):
 1. **user-readme** ✅ – `Anniversary.Desktop/README.md`, the guide for users, shipped as `README.md` next to the
-   executable in every archive (and later in every installer); spec 10.
-2. **packages**, besides the `.zip` and `.tar.gz`: macOS `.app` in a `.dmg` (Apple Silicon and Intel); a Fedora
-   package (an RPM is suggested, an AppImage is the alternative; not decided yet); an Inno Setup installer for Windows
-   (per user, x64 and arm64).
+   executable in every archive and package; spec 10.
+2. **packages** ✅ – besides the `.zip` and `.tar.gz`, built by `packaging/Build-Package.ps1` on each RID's own OS
+   and attached by CI (spec 10): a macOS `.dmg` with an ad-hoc signed `Anniversary.app` (Apple Silicon and Intel;
+   built and started on macOS), a Linux **AppImage** (user decision over an RPM: one file that runs on Fedora and other
+   distributions, nothing to install) and an Inno Setup installer for Windows (per user, x64 and arm64). The installer
+   and the AppImages are first built by CI; they still need a check on Windows and Fedora (acceptance criterion 15).
 3. **start-at-login** – the in-app setting (see "Idea: installers and start at login" below).
 4. **releases** – GitHub Releases from a version tag (5.1.0), with all packages and archives.
 
 Signing (Apple Developer ID, a Windows code-signing certificate) isn't decided; unsigned builds need the first-launch
-steps the user README will explain.
+steps the user README explains.
 Follow-ups: one task per additional name-day calendar (license checked, every date verified against its source).
 Future phases: **ios** (phase 2), **android** (phase 3, optional).
 
@@ -149,30 +151,29 @@ Further ideas, not agreed yet:
 - Swedish/Finnish name days: their official lists are copyrighted, so check licensing first.
 - Astronomical days (solstices, equinoxes, full moons): computed, no licensing issue.
 
-## Idea: installers and start at login (requested, not started)
+## Idea: installers and start at login (installers done, start at login next)
 
-Today each platform gets a single executable that is copied by hand (spec 10). Later, each platform could get a proper
-install, and the app could start when the user logs in. The spec lists installers as a phase-1 non-goal, so this needs
-a spec section when it's picked up.
+Each platform now has a package besides its archive (spec 10, **packages** above). Start at login is next and needs a
+spec section when it's picked up.
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
-| **Install** | Per-user installer (e.g. Inno Setup) into `%LOCALAPPDATA%\Programs\Anniversary`: Start-menu shortcut and uninstaller, no admin rights. MSIX is possible but needs a trusted signing certificate. | The `.app` bundle (**mac-app**, above) in a `.dmg`, dragged into Applications; macOS apps rarely use installers. | The CI `.tar.gz` plus a small install script that adds a `.desktop` entry and the icon (which also gives GNOME the app icon). An RPM or a Flatpak later, if wanted. |
-| **Start at login** | A value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | A LaunchAgent plist in `~/Library/LaunchAgents`, or the `SMAppService` login-item API (macOS 13+) once there's an `.app` bundle | A `.desktop` file in `~/.config/autostart` (XDG autostart) |
+| **Install** (done) | Per-user Inno Setup installer into `%LOCALAPPDATA%\Programs\Anniversary`: Start-menu shortcut and uninstaller, no admin rights. MSIX is possible but needs a trusted signing certificate. | The `.app` bundle in a `.dmg`, dragged into Applications; macOS apps rarely use installers. | An AppImage (user decision over an RPM). A Flatpak later, if wanted. |
+| **Start at login** | A value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | A LaunchAgent plist in `~/Library/LaunchAgents`, or the `SMAppService` login-item API (macOS 13+) for the `.app` | A `.desktop` file in `~/.config/autostart` (XDG autostart) |
 
-Suggestions (not decided yet):
-- **No data file is installed.** The app already starts with the empty built-in people list and creates
+Suggestions (signing and start at login not decided yet):
+- **No data file is installed** (done). The app already starts with the empty built-in people list and creates
   `Anniversary.Data.json` in the app-data folder on the first Save (spec 5.6). An installer must never put a data file
   next to the executable: Program Files is read-only for users, so saving would fail.
 - **Start at login as an in-app setting** (⋯ ▸ Start at Login, a check item) rather than an installer step: per user,
   no admin rights, works for copies that weren't installed, and can be turned off again. It needs a little platform code
   in the desktop project and no packages. The Windows uninstaller should remove the entry too.
-- **Signing:** unsigned downloads get a SmartScreen warning on Windows and are blocked by Gatekeeper on macOS (the
-  `xattr` workaround in the README). Signing needs a Windows code-signing certificate and a paid Apple Developer account
-  (Developer ID signing and notarization).
-- **Releases:** CI can build each installer on its own OS. Pushing a version tag (e.g. `v5.1.0`) could attach them,
+- **Signing:** unsigned downloads get a SmartScreen warning on Windows and are blocked by Gatekeeper on macOS (Open
+  Anyway, explained in the user README). Signing needs a Windows code-signing certificate and a paid Apple Developer
+  account (Developer ID signing and notarization).
+- **Releases:** CI builds each package on its own OS. Pushing a version tag (e.g. `v5.1.0`) could attach them,
   with the plain downloads, to a GitHub Release. The version is raised by hand in `Directory.Build.props` when
   something ships.
-- **Uninstalling keeps the user's data** (the app-data folder).
+- **Uninstalling keeps the user's data** (the app-data folder; done for the Windows installer).
 
 

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Anniversary
+Comment=Name days, birthdays and anniversaries for any day
+Exec=Anniversary
+Icon=anniversary
+Terminal=false
+Categories=Office;Calendar;
+StartupWMClass=Anniversary

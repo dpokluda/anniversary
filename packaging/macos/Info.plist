@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Info.plist of Anniversary.app (spec 10). Build-Package.ps1 fills in {Version} and {Copyright} from
+     Directory.Build.props. 12.0 is the minimum macOS that the published executable declares. -->
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleDisplayName</key>
+  <string>Anniversary</string>
+  <key>CFBundleExecutable</key>
+  <string>Anniversary</string>
+  <key>CFBundleIconFile</key>
+  <string>App.icns</string>
+  <key>CFBundleIdentifier</key>
+  <string>cz.pokluda.anniversary</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>Anniversary</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>{Version}</string>
+  <key>CFBundleVersion</key>
+  <string>{Version}</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.productivity</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>12.0</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>NSHumanReadableCopyright</key>
+  <string>{Copyright}</string>
+</dict>
+</plist>

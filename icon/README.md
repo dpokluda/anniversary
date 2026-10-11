@@ -13,9 +13,9 @@ Requires Windows (it uses System.Drawing). Edit the drawing code in the script a
 
 | File | Sizes | Used for |
 |---|---|---|
-| `../Anniversary.Shared/Assets/App.ico` | 16, 20, 24, 32, 40, 48, 64, 256 px, 32-bit colour | exe icon (Windows), window icons |
-| `../Anniversary.Shared/Assets/App.png` | 256 px | About dialog |
-| `App.icns` | 16–1024 px, including Retina @2x | macOS `.app` bundle (when one is added) |
+| `../Anniversary.Shared/Assets/App.ico` | 16, 20, 24, 32, 40, 48, 64, 256 px, 32-bit colour | exe icon (Windows), window icons, Windows installer |
+| `../Anniversary.Shared/Assets/App.png` | 256 px | About dialog, Linux AppImage |
+| `App.icns` | 16–1024 px, including Retina @2x | macOS `.app` bundle (`packaging/Build-Package.ps1`) |
 | `App-1024.png` | 1024 px | master image: Linux desktop entries, store listings |
 
 
