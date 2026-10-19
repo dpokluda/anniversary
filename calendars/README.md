@@ -1,6 +1,6 @@
 # Calendars
 
-`Anniversary.Calendar.*.json` files for Anniversary v5 (format: [spec 5.1](../specs/spec.md), choosing calendars: spec 5.7 and 7.10).
+`Anniversary.Calendar.*.json` files for Anniversary v5 (format: [spec 5.1](../docs/spec.md), choosing calendars: spec 5.7 and 7.10).
 **Generated. Don't edit by hand.** Re-create them with:
 
 ```powershell

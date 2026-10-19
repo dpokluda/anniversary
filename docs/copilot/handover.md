@@ -1,7 +1,8 @@
 # Anniversary v5 – Handover
 
-Read this first when you continue work in a new GitHub Copilot session (on any OS). Then read
-[`specs/spec.md`](../spec.md), which is the source of truth; [`specs/plan.md`](../plan.md) has the decisions and the
+Read this first when you continue work in a new GitHub Copilot session (on any OS). Then read the constitution,
+[`.specify/memory/constitution.md`](../../.specify/memory/constitution.md) (the project's principles), and
+[`docs/spec.md`](../spec.md), which is the source of truth; [`docs/plan.md`](../plan.md) has the decisions and the
 ideas. To start a session, paste the prompt at the bottom. Update this file at the end of a session.
 
 ## Where things stand
@@ -12,7 +13,8 @@ Linux.
 
 | Area | Status |
 |---|---|
-| Spec and plan | `specs/spec.md` (source of truth), `specs/plan.md`; mocks in `specs/screens/` (approximate, larger than the real app; the spec's sizes win) |
+| Spec and plan | `docs/spec.md` (source of truth), `docs/plan.md`; mocks in `docs/screens/` (approximate, larger than the real app; the spec's sizes win) |
+| Spec Kit | Adopted on 18 October 2026 (Spec Kit 1.2.1; Copilot skills in `.github/skills/`, PowerShell scripts in `.specify/`). Principles: `.specify/memory/constitution.md`. `specs/001-…` to `specs/012-…` record the features built so far, reconstructed from the specs, the sessions and the git history. New work starts with `/speckit-specify` (constitution, Development Workflow) |
 | Code | `Anniversary.Shared` (all UI and logic), `Anniversary.Desktop` (exe and `StartAtLogin.cs`), `Anniversary.Tests` (205 tests; the 3 registry tests run only on Windows, so 202 pass and 3 skip elsewhere) |
 | Windows | Verified: v4's size and native font sizes; light and dark |
 | macOS | Verified on Apple Silicon. Fonts, line spacing, margins and corners have macOS-specific values (spec 7.1; lessons below) |
@@ -81,6 +83,10 @@ spec 5.5), the data file (from the editor and Save As…) and, when asked, its S
   `AppWindowMargin`, `AppWindowHeight`, and on macOS also `ContentControlThemeFontFamily` and `ControlCornerRadius`.
   Windows and Linux use the defaults. A platform fix adds an `OperatingSystem.Is…()` block there and keeps the other
   platforms' looks unchanged.
+- **Spec Kit** (user decision, 18 October 2026): new features go through Spec Kit (`/speckit-specify` →
+  `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze` → `/speckit-implement` →
+  `/speckit-converge`). A finished `specs/NNN-*/` folder is a record and isn't rewritten (flow-forward); `docs/spec.md`
+  stays the living current-state spec, and each feature updates it.
 
 ## Lessons from the macOS look fixes (useful for any new platform, including iOS)
 
@@ -163,7 +169,7 @@ days" and Find stop at 31 December 9999, and Yesterday/Tomorrow do nothing at th
 
 ## Next steps (agreed direction)
 
-1. **Packaging and releases** (`specs/plan.md`, the user's plan, in this order):
+1. **Packaging and releases** (`docs/plan.md`, the user's plan, in this order):
    - ✅ the **README for users**: `Anniversary.Desktop/README.md`, published next to the executable, so it's in every
      archive and package. Every change users see updates it (spec 10);
    - ✅ **packages** besides the `.zip` and `.tar.gz` (spec 10): a macOS `.dmg` with an ad-hoc signed `.app` (Apple
@@ -182,6 +188,7 @@ days" and Find stop at 31 December 9999, and Yesterday/Tomorrow do nothing at th
 ## Prompt to start a new session
 
 > I'm continuing work on Anniversary v5 (Avalonia 12, .NET 10) in the `anniversary` repository. Read
-> `specs/copilot/handover.md` first, then `specs/spec.md`. Phase 1 (desktop) is done and verified on Windows, macOS
-> and Linux. Today I'd like to: {task}. Follow the spec's coding guidelines, keep the Windows, macOS and Linux looks
-> unchanged unless I ask, update the spec and this handover with any change, and don't commit unless I ask.
+> `docs/copilot/handover.md` first, then `.specify/memory/constitution.md` and `docs/spec.md`. Phase 1 (desktop) is
+> done and verified on Windows, macOS and Linux. Today I'd like to: {task}. Follow the constitution (it includes the
+> spec's coding guidelines), keep the Windows, macOS and Linux looks unchanged unless I ask, update the spec and this
+> handover with any change, and don't commit unless I ask.

@@ -37,7 +37,9 @@ Three projects, code-behind views (no MVVM), and one plain logic class:
 anniversary\  (repository root)
   Anniversary.slnx, Directory.Build.props, README.md
   .github\workflows\       ci.yml: build, test and publish on Windows, macOS and Linux
-  specs\                   spec.md, plan.md, copilot\handover.md, screens\ (v5 preview mocks)
+  .github\skills\, .specify\  Spec Kit: Copilot commands, constitution, templates and scripts
+  docs\                    spec.md, plan.md, copilot\handover.md, screens\ (v5 preview mocks)
+  specs\                   Spec Kit feature folders (NNN-short-name\: spec, plan, tasks, …), one per change
   Anniversary.Shared\      shared Avalonia library: Model\, AnniversaryBook, DayInfo, Views\, App.axaml, Assets\, Defaults\
   Anniversary.Desktop\     WinExe "Anniversary" for Windows/macOS/Linux (Program.cs)
   Anniversary.Tests\       xUnit, classic style
@@ -78,14 +80,14 @@ Later phases add `Anniversary.iOS` (and maybe `Anniversary.Android`) next to `An
 
 ## Preview mocks
 
-`specs\screens\*.preview.png` are **approximate HTML mocks**, not real Avalonia renders. Each has a "PREVIEW MOCK"
-banner. Their source is `specs\screens\mockup.html`.
+`docs\screens\*.preview.png` are **approximate HTML mocks**, not real Avalonia renders. Each has a "PREVIEW MOCK"
+banner. Their source is `docs\screens\mockup.html`.
 
 ## Work breakdown (phase 1)
 
 Phase 1 is done and verified on Windows, macOS and Linux.
 
-1. **spec** – Create `specs\` (spec, plan, mocks). ✅
+1. **spec** – Create the spec, plan and mocks (in `specs\`; moved to `docs\` on 18 October 2026). ✅
 2. **scaffold** – `Anniversary.slnx`, `Directory.Build.props`, the three projects. ✅
 3. **core** – Model (including `UserSettings`), `AnniversaryBook`, `DayInfo`, embedded defaults. ✅
 4. **core-tests** – Classic xUnit tests (spec section 9), including `UserSettingsTests`. ✅

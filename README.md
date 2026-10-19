@@ -4,7 +4,9 @@
 
 Shows name days, birthdays and anniversaries for a day. It's a cross-platform rewrite of the WinForms
 Anniversary v4 (kept in a separate repository) using [Avalonia UI](https://avaloniaui.net/) on .NET 10, and runs on Windows, macOS
-and Linux. The design is in [`specs/spec.md`](specs/spec.md) and [`specs/plan.md`](specs/plan.md). This README is for
+and Linux. The design is in [`docs/spec.md`](docs/spec.md) and [`docs/plan.md`](docs/plan.md); the project's principles are in
+[`.specify/memory/constitution.md`](.specify/memory/constitution.md), and [`specs/`](specs) has one
+[Spec Kit](https://github.com/github/spec-kit) folder per change. This README is for
 developers; the guide for people using the app is [`Anniversary.Desktop/README.md`](Anniversary.Desktop/README.md),
 which comes with every download.
 
@@ -170,7 +172,7 @@ the menu the next time it opens.
 
 Besides `MM-dd` dates, a calendar file can list days that move from year to year: `11-Thu-4` (the fourth Thursday of
 November), `05-Mon-last` (the last Monday of May) and `easter`, each optionally moved by up to 99 days (`easter+1`,
-`11-Thu-4+1`). The format is in [`specs/spec.md`](specs/spec.md) (5.1). The shipped calendars, their sources and
+`11-Thu-4+1`). The format is in [`docs/spec.md`](docs/spec.md) (5.1). The shipped calendars, their sources and
 licenses are described in [`calendars/README.md`](calendars/README.md).
 
 ## Projects
